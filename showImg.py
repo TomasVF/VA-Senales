@@ -1,6 +1,9 @@
 import cv2
 import numpy as np
 
+def mostrar_imagen(imagen):
+    cv2.imshow("Imagen", imagen)
+    cv2.waitKey(0)
 
 def showImgs(images):
     # Asumir que las imágenes son del mismo tamaño
@@ -29,7 +32,8 @@ def showImgs(images):
     cv2.destroyAllWindows()
 
 
-images = [cv2.imread(f"materialSenales/{i}.ppm") for i in range(1, 13)]
+
+# images = [cv2.imread(f"materialSenales/{i}.ppm") for i in range(1, 13)]
 
 
-showImgs(images)
+# showImgs(images)
