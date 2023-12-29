@@ -201,9 +201,52 @@ def elimOtherColors(img):
     si.mostrar_imagen(mascara_suavizada)
 
     # Aplicar dilation para mejorar la máscara suavizada
-    mascara_final = cerradura(mascara_suavizada, 8)
+    mascara_final = dilatacion(mascara_suavizada, 10)
     si.mostrar_imagen(mascara_final)
 
+
+    lower_white = np.array([0, 0, 200])  # Rango bajo para el matiz, saturación y valor
+    upper_white = np.array([180, 30, 255])  # Rango alto para el matiz, saturación y valor
+    mascara_blanco = cv2.inRange(imagen_hsv, lower_white, upper_white)
+
+    mascara_prueba = cv2.bitwise_and((cv2.bitwise_or(mascara_combinada, mascara_blanco)), mascara_final)
+    si.mostrar_imagen(mascara_prueba)
+
+    # Aplicar desenfoque para eliminar zonas con tonos no uniformes
+    mascara_suavizada = cv2.medianBlur(mascara_prueba, 9)
+    si.mostrar_imagen(mascara_suavizada)
+
     # Aplicar la máscara a la imagen original
-    resultado = cv2.bitwise_and(img, img, mask=mascara_final)
-    return resultado
+    resultado = cv2.bitwise_and(img, img, mask=mascara_suavizada)
+    return mascara_suavizada
+
+
+
+def elimOtherColors2(img):
+    imagen_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+
+    # Definir el rango de color para el rojo en el espacio de color HSV
+    lower_red1 = np.array([0, 100, 50])  # Rango bajo para el matiz, saturación y valor
+    upper_red1 = np.array([10, 255, 255])  # Rango alto para el matiz, saturación y valor
+
+    # Crear una máscara utilizando inRange para seleccionar píxeles dentro del rango de color
+    mascara_roja1 = cv2.inRange(imagen_hsv, lower_red1, upper_red1)
+
+    lower_blue = np.array([100, 100, 50])
+    upper_blue = np.array([120, 255, 255])
+
+    mascara_azul = cv2.inRange(imagen_hsv, lower_blue, upper_blue)
+
+    # Definir otro rango para el rojo que se encuentra en la parte superior del espectro
+    lower_red2 = np.array([160, 100, 50])  # Rango bajo para el matiz, saturación y valor
+    upper_red2 = np.array([180, 255, 255])  # Rango alto para el matiz, saturación y valor
+
+    # Crear otra máscara para el rango superior del rojo
+    mascara_roja2 = cv2.inRange(imagen_hsv, lower_red2, upper_red2)
+
+    # Combinar ambas máscaras para cubrir todo el rango de colores rojos
+    mascara_roja = cv2.bitwise_or(mascara_roja1, cv2.bitwise_or(mascara_roja2, mascara_azul))
+
+    # Aplicar la máscara a la imagen original
+    resultado = cv2.bitwise_and(img, img, mask=mascara_roja)
+    return mascara_roja

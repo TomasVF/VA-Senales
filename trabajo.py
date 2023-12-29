@@ -6,7 +6,7 @@ import funciones as fs
 images = [cv2.imread(f"materialSenales/{i}.ppm") for i in range(1, 13)]
 
 
-imagen = images[1]
+imagen = images[0]
 
 si.mostrar_imagen(imagen)
 
@@ -20,7 +20,6 @@ si.mostrar_imagen(imagen)
 imagenEnchance = fs.elimOtherColors(imagen)
 si.mostrar_imagen(imagenEnchance)
 
-h, s, v = cv2.split(imagenEnchance)
 
 
 # Canny
