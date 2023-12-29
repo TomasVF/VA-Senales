@@ -6,7 +6,7 @@ import funciones as fs
 images = [cv2.imread(f"materialSenales/{i}.ppm") for i in range(1, 13)]
 
 
-imagen = images[1]
+imagen = images[4]
 
 si.mostrar_imagen(imagen)
 
@@ -25,6 +25,21 @@ si.mostrar_imagen(imagenEnchance)
 edges = fs.cannyHSV(imagenEnchance)
 si.mostrar_imagen(edges)
 
+# edges2 = fs.laplace(imagenEnchance)
+# si.mostrar_imagen(edges2)
+
+# apertura = fs.apertura(edges2, 2)
+# si.mostrar_imagen(apertura)
+
+# cerradura = fs.cerradura(edges2, 3)
+# si.mostrar_imagen(cerradura)
+
+# erosion = fs.erosion(edges2, 3)
+# si.mostrar_imagen(erosion)
+
+# dilatacion = fs.dilatacion(edges2, 5)
+# si.mostrar_imagen(dilatacion)
+
 
 
 # Deteccion de circulos
@@ -34,5 +49,5 @@ si.mostrar_imagen(imagenCirculos)
 
 
 # Dteccion de triangulos
-imagenTriangulos = fs.detectCircles(imagen, edges)
+imagenTriangulos = fs.detectTriangles(imagen, edges)
 si.mostrar_imagen(imagenTriangulos)

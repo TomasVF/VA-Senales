@@ -2,6 +2,57 @@ import cv2
 import numpy as np
 
 
+def erosion(imagen, kernelSize=5):
+    # Definir un kernel para la erosión
+    kernel = np.ones((kernelSize, kernelSize), np.uint8)
+
+    # Aplicar erosión
+    erosion_resultado = cv2.erode(imagen, kernel, iterations=1)
+    return erosion_resultado
+
+
+def dilatacion(imagen, kernelSize=5):
+    # Definir un kernel para la erosión
+    # Definir un kernel para la dilatación
+    kernel = np.ones((kernelSize, kernelSize), np.uint8)
+
+    # Aplicar dilatación
+    dilatacion_resultado = cv2.dilate(imagen, kernel, iterations=1)
+
+    return dilatacion_resultado
+
+
+
+def apertura(imagen, kernelSize = 5):
+    # Definir un kernel para la operación de apertura
+    kernel = np.ones((kernelSize, kernelSize), np.uint8)
+
+    # Aplicar dilatación seguida de erosión (operación de apertura)
+    apertura_resultado = cv2.morphologyEx(imagen, cv2.MORPH_OPEN, kernel)
+    return apertura_resultado
+
+
+def cerradura(imagen, kernelSize = 5):
+     # Definir un kernel para la operación de cerradura
+    kernel = np.ones((kernelSize, kernelSize), np.uint8)
+
+    # Aplicar erosión seguida de dilatación (operación de cerradura)
+    cerradura_resultado = cv2.morphologyEx(imagen, cv2.MORPH_CLOSE, kernel)
+    return cerradura_resultado
+
+
+def laplace(imagen):
+    v_channel = imagen[:, :, 2]
+    # Aplicar el operador Laplaciano
+    bordes_laplaciana = cv2.Laplacian(v_channel, cv2.CV_64F)
+
+    # Convertir los valores negativos a positivos
+    bordes_laplaciana = np.abs(bordes_laplaciana)
+
+    # Convertir a 8 bits para mostrar
+    bordes_laplaciana = np.uint8(bordes_laplaciana)
+    return bordes_laplaciana
+
 def detectCircles(imagen, edges):
     # Apply HoughCircles to detect circles in the Canny edges
     circles = cv2.HoughCircles(edges, cv2.HOUGH_GRADIENT, dp=1, minDist=150,
@@ -18,7 +69,7 @@ def detectCircles(imagen, edges):
     return imagen
 
 
-def detectCircles(imagen, edges):
+def detectTriangles(imagen, edges):
     contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     # Iterar sobre los contornos y filtrar los que parecen ser triángulos
@@ -32,7 +83,7 @@ def detectCircles(imagen, edges):
 
     # Dibujar los triángulos encontrados en la imagen original
     image_with_triangles = cv2.drawContours(imagen.copy(), triangles, -1, (0, 255, 0), 2)
-    
+
     return image_with_triangles
 
 
@@ -49,23 +100,23 @@ def elimOtherColors(img):
     imagen_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
     # Definir el rango de color para el rojo en el espacio de color HSV
-    rango_bajo = np.array([0, 100, 100])  # Rango bajo para el matiz, saturación y valor
-    rango_alto = np.array([10, 255, 255])  # Rango alto para el matiz, saturación y valor
+    lower_red1 = np.array([0, 100, 50])  # Rango bajo para el matiz, saturación y valor
+    upper_red1 = np.array([10, 255, 255])  # Rango alto para el matiz, saturación y valor
 
     # Crear una máscara utilizando inRange para seleccionar píxeles dentro del rango de color
-    mascara_roja1 = cv2.inRange(imagen_hsv, rango_bajo, rango_alto)
+    mascara_roja1 = cv2.inRange(imagen_hsv, lower_red1, upper_red1)
 
-    lower_blue = np.array([90, 40, 50])
-    upper_blue = np.array([120, 255, 210])
+    lower_blue = np.array([100, 100, 50])
+    upper_blue = np.array([120, 255, 255])
 
     mascara_azul = cv2.inRange(imagen_hsv, lower_blue, upper_blue)
 
     # Definir otro rango para el rojo que se encuentra en la parte superior del espectro
-    rango_bajo = np.array([160, 100, 100])  # Rango bajo para el matiz, saturación y valor
-    rango_alto = np.array([180, 255, 255])  # Rango alto para el matiz, saturación y valor
+    lower_red2 = np.array([160, 100, 50])  # Rango bajo para el matiz, saturación y valor
+    upper_red2 = np.array([180, 255, 255])  # Rango alto para el matiz, saturación y valor
 
     # Crear otra máscara para el rango superior del rojo
-    mascara_roja2 = cv2.inRange(imagen_hsv, rango_bajo, rango_alto)
+    mascara_roja2 = cv2.inRange(imagen_hsv, lower_red2, upper_red2)
 
     # Combinar ambas máscaras para cubrir todo el rango de colores rojos
     mascara_roja = cv2.bitwise_or(mascara_roja1, cv2.bitwise_or(mascara_roja2, mascara_azul))
