@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import showImg as si
 
 
 def erosion(imagen, kernelSize=5):
@@ -98,6 +99,26 @@ def detectTriangles(imagen, edges):
 
     return image_with_triangles
 
+def detectTrianglesByArea(imagen, edges, min_area=100):
+    contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Iterar sobre los contornos y filtrar aquellos que parecen ser triángulos por su área
+    triangles = []
+    for contour in contours:
+        # Calcular el área del contorno
+        area = cv2.contourArea(contour)
+
+        # Verificar si el área es mayor que el valor mínimo
+        if area >= min_area:
+            epsilon = 0.04 * cv2.arcLength(contour, True)
+            approx = cv2.approxPolyDP(contour, epsilon, True)
+            triangles.append(approx)
+
+    # Dibujar los triángulos detectados en la imagen original
+    image_with_triangles = cv2.drawContours(imagen.copy(), triangles, -1, (0, 255, 0), 2)
+
+    return image_with_triangles
+
 
 def detectSquares(imagen, edges):
     contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -138,27 +159,51 @@ def elimOtherColors(img):
     imagen_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
     # Definir el rango de color para el rojo en el espacio de color HSV
-    lower_red1 = np.array([0, 100, 50])  # Rango bajo para el matiz, saturación y valor
+    lower_red1 = np.array([0, 100, 80])  # Rango bajo para el matiz, saturación y valor
     upper_red1 = np.array([10, 255, 255])  # Rango alto para el matiz, saturación y valor
-
-    # Crear una máscara utilizando inRange para seleccionar píxeles dentro del rango de color
     mascara_roja1 = cv2.inRange(imagen_hsv, lower_red1, upper_red1)
 
     lower_blue = np.array([100, 100, 50])
     upper_blue = np.array([120, 255, 255])
-
     mascara_azul = cv2.inRange(imagen_hsv, lower_blue, upper_blue)
 
     # Definir otro rango para el rojo que se encuentra en la parte superior del espectro
-    lower_red2 = np.array([160, 100, 50])  # Rango bajo para el matiz, saturación y valor
+    lower_red2 = np.array([160, 100, 80])  # Rango bajo para el matiz, saturación y valor
     upper_red2 = np.array([180, 255, 255])  # Rango alto para el matiz, saturación y valor
-
-    # Crear otra máscara para el rango superior del rojo
     mascara_roja2 = cv2.inRange(imagen_hsv, lower_red2, upper_red2)
 
     # Combinar ambas máscaras para cubrir todo el rango de colores rojos
-    mascara_roja = cv2.bitwise_or(mascara_roja1, cv2.bitwise_or(mascara_roja2, mascara_azul))
+    mascara_combinada = cv2.bitwise_or(mascara_roja1, cv2.bitwise_or(mascara_roja2, mascara_azul))
+    si.mostrar_imagen(mascara_combinada)
+
+    # # Aplicar erode para eliminar lo que no sean lineas verticales
+    # kernel = np.array([[1], [1], [1], [1], [1], [1], [1]])
+    # mascara_erode = cv2.erode(mascara_combinada, kernel, iterations=1)
+    # si.mostrar_imagen(mascara_erode)
+
+    # # Aplicar erode para eliminar lo que no sean lineas horizontales
+    # kernel = np.array([[1, 1, 1, 1, 1, 1, 1]])
+    # mascara_erode2 = cv2.erode(mascara_combinada, kernel, iterations=1)
+    # si.mostrar_imagen(mascara_erode2)
+
+
+    # # mezclamos las imagenes resultantes de los dos erodes
+    # mascara_erode_final = cv2.bitwise_or(mascara_erode, mascara_erode2)
+    # si.mostrar_imagen(mascara_erode_final)
+
+
+    # # Aplicar dilation para mejorar la máscara suavizada
+    # kernel = np.ones((4, 4), np.uint8)
+    # mascara_final = cv2.dilate(mascara_erode_final, kernel, iterations=1)
+
+    # Aplicar desenfoque para eliminar zonas con tonos no uniformes
+    mascara_suavizada = cv2.medianBlur(mascara_combinada, 5)
+    si.mostrar_imagen(mascara_suavizada)
+
+    # Aplicar dilation para mejorar la máscara suavizada
+    mascara_final = cerradura(mascara_suavizada, 8)
+    si.mostrar_imagen(mascara_final)
 
     # Aplicar la máscara a la imagen original
-    resultado = cv2.bitwise_and(img, img, mask=mascara_roja)
+    resultado = cv2.bitwise_and(img, img, mask=mascara_final)
     return resultado

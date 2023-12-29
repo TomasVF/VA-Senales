@@ -6,22 +6,22 @@ import funciones as fs
 images = [cv2.imread(f"materialSenales/{i}.ppm") for i in range(1, 13)]
 
 
-imagen = images[0]
+imagen = images[1]
 
 si.mostrar_imagen(imagen)
 
 
-# Eliminar ruido
-imagen = cv2.GaussianBlur(imagen, (7,7), 0)
-si.mostrar_imagen(imagen)
+# # Eliminar ruido
+# imagen = cv2.GaussianBlur(imagen, (7,7), 0)
+# si.mostrar_imagen(imagen)
 
 
 # Dejamos solo los colores relevantes
 imagenEnchance = fs.elimOtherColors(imagen)
 si.mostrar_imagen(imagenEnchance)
 
+h, s, v = cv2.split(imagenEnchance)
 
-# imagen_rgb = cv2.cvtColor(imagenEnchance, cv2.COLOR_HSV2RGB)
 
 # Canny
 edges = fs.cannyHSV(imagenEnchance)
