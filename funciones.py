@@ -57,7 +57,7 @@ def laplace(imagen):
 def detectCircles(imagen, edges):
     # Apply HoughCircles to detect circles in the Canny edges
     circles = cv2.HoughCircles(edges, cv2.HOUGH_GRADIENT, dp=1, minDist=150,
-                            param1=200, param2=30, minRadius=10, maxRadius=50)
+                            param1=1500, param2=16, minRadius=10, maxRadius=50)
 
     # If circles are found, draw them on the original image
     if circles is not None:
@@ -99,26 +99,6 @@ def detectTriangles(imagen, edges):
 
     return image_with_triangles
 
-def detectTrianglesByArea(imagen, edges, min_area=100):
-    contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-    # Iterar sobre los contornos y filtrar aquellos que parecen ser triángulos por su área
-    triangles = []
-    for contour in contours:
-        # Calcular el área del contorno
-        area = cv2.contourArea(contour)
-
-        # Verificar si el área es mayor que el valor mínimo
-        if area >= min_area:
-            epsilon = 0.04 * cv2.arcLength(contour, True)
-            approx = cv2.approxPolyDP(contour, epsilon, True)
-            triangles.append(approx)
-
-    # Dibujar los triángulos detectados en la imagen original
-    image_with_triangles = cv2.drawContours(imagen.copy(), triangles, -1, (0, 255, 0), 2)
-
-    return image_with_triangles
-
 
 def detectSquares(imagen, edges):
     contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -155,26 +135,31 @@ def cannyHSV(imagen):
     return edges
 
 # Eliminamos los colores que no aparecen en señales
-def elimOtherColors(img):
+def elimOtherColors(img, red, showAll):
     imagen_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
-    # Definir el rango de color para el rojo en el espacio de color HSV
-    lower_red1 = np.array([0, 100, 80])  # Rango bajo para el matiz, saturación y valor
-    upper_red1 = np.array([10, 255, 255])  # Rango alto para el matiz, saturación y valor
-    mascara_roja1 = cv2.inRange(imagen_hsv, lower_red1, upper_red1)
+    if red==False :
+        lower_blue = np.array([100, 100, 50])
+        upper_blue = np.array([120, 255, 255])
+        mascara_azul = cv2.inRange(imagen_hsv, lower_blue, upper_blue)
+        mascara_combinada = mascara_azul
+    else:
+        # Definir el rango de color para el rojo en el espacio de color HSV
+        lower_red1 = np.array([0, 100, 80])  # Rango bajo para el matiz, saturación y valor
+        upper_red1 = np.array([10, 255, 255])  # Rango alto para el matiz, saturación y valor
+        mascara_roja1 = cv2.inRange(imagen_hsv, lower_red1, upper_red1)
 
-    lower_blue = np.array([100, 100, 50])
-    upper_blue = np.array([120, 255, 255])
-    mascara_azul = cv2.inRange(imagen_hsv, lower_blue, upper_blue)
+        # Definir otro rango para el rojo que se encuentra en la parte superior del espectro
+        lower_red2 = np.array([160, 100, 80])  # Rango bajo para el matiz, saturación y valor
+        upper_red2 = np.array([180, 255, 255])  # Rango alto para el matiz, saturación y valor
+        mascara_roja2 = cv2.inRange(imagen_hsv, lower_red2, upper_red2)
 
-    # Definir otro rango para el rojo que se encuentra en la parte superior del espectro
-    lower_red2 = np.array([160, 100, 80])  # Rango bajo para el matiz, saturación y valor
-    upper_red2 = np.array([180, 255, 255])  # Rango alto para el matiz, saturación y valor
-    mascara_roja2 = cv2.inRange(imagen_hsv, lower_red2, upper_red2)
+        # Combinar ambas máscaras para cubrir todo el rango de colores rojos
+        mascara_combinada = cv2.bitwise_or(mascara_roja1, mascara_roja2)
 
-    # Combinar ambas máscaras para cubrir todo el rango de colores rojos
-    mascara_combinada = cv2.bitwise_or(mascara_roja1, cv2.bitwise_or(mascara_roja2, mascara_azul))
-    si.mostrar_imagen(mascara_combinada)
+    if showAll: si.mostrar_imagen(mascara_combinada)
+        
+
 
     # # Aplicar erode para eliminar lo que no sean lineas verticales
     # kernel = np.array([[1], [1], [1], [1], [1], [1], [1]])
@@ -198,11 +183,11 @@ def elimOtherColors(img):
 
     # Aplicar desenfoque para eliminar zonas con tonos no uniformes
     mascara_suavizada = cv2.medianBlur(mascara_combinada, 5)
-    si.mostrar_imagen(mascara_suavizada)
+    if showAll: si.mostrar_imagen(mascara_suavizada)
 
     # Aplicar dilation para mejorar la máscara suavizada
     mascara_final = dilatacion(mascara_suavizada, 10)
-    si.mostrar_imagen(mascara_final)
+    if showAll: si.mostrar_imagen(mascara_final)
 
 
     lower_white = np.array([0, 0, 200])  # Rango bajo para el matiz, saturación y valor
@@ -210,11 +195,11 @@ def elimOtherColors(img):
     mascara_blanco = cv2.inRange(imagen_hsv, lower_white, upper_white)
 
     mascara_prueba = cv2.bitwise_and((cv2.bitwise_or(mascara_combinada, mascara_blanco)), mascara_final)
-    si.mostrar_imagen(mascara_prueba)
+    if showAll: si.mostrar_imagen(mascara_prueba)
 
     # Aplicar desenfoque para eliminar zonas con tonos no uniformes
     mascara_suavizada = cv2.medianBlur(mascara_prueba, 9)
-    si.mostrar_imagen(mascara_suavizada)
+    if showAll: si.mostrar_imagen(mascara_suavizada)
 
     # Aplicar la máscara a la imagen original
     resultado = cv2.bitwise_and(img, img, mask=mascara_suavizada)
@@ -222,31 +207,60 @@ def elimOtherColors(img):
 
 
 
-def elimOtherColors2(img):
+
+
+def elimOtherColors2(img,red, showAll):
     imagen_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
-    # Definir el rango de color para el rojo en el espacio de color HSV
-    lower_red1 = np.array([0, 100, 50])  # Rango bajo para el matiz, saturación y valor
-    upper_red1 = np.array([10, 255, 255])  # Rango alto para el matiz, saturación y valor
+    if red==False :
+        lower_blue = np.array([100, 100, 50])
+        upper_blue = np.array([120, 255, 255])
+        mascara_azul = cv2.inRange(imagen_hsv, lower_blue, upper_blue)
+        mascara_combinada = mascara_azul
+    else:
+        # Definir el rango de color para el rojo en el espacio de color HSV
+        lower_red1 = np.array([0, 100, 80])  # Rango bajo para el matiz, saturación y valor
+        upper_red1 = np.array([10, 255, 255])  # Rango alto para el matiz, saturación y valor
+        mascara_roja1 = cv2.inRange(imagen_hsv, lower_red1, upper_red1)
 
-    # Crear una máscara utilizando inRange para seleccionar píxeles dentro del rango de color
-    mascara_roja1 = cv2.inRange(imagen_hsv, lower_red1, upper_red1)
+        # Definir otro rango para el rojo que se encuentra en la parte superior del espectro
+        lower_red2 = np.array([160, 100, 80])  # Rango bajo para el matiz, saturación y valor
+        upper_red2 = np.array([180, 255, 255])  # Rango alto para el matiz, saturación y valor
+        mascara_roja2 = cv2.inRange(imagen_hsv, lower_red2, upper_red2)
 
-    lower_blue = np.array([100, 100, 50])
-    upper_blue = np.array([120, 255, 255])
+        # Combinar ambas máscaras para cubrir todo el rango de colores rojos
+        mascara_combinada = cv2.bitwise_or(mascara_roja1, mascara_roja2)
+        
+    if showAll: si.mostrar_imagen(mascara_combinada)
 
-    mascara_azul = cv2.inRange(imagen_hsv, lower_blue, upper_blue)
+    # # Aplicar erode para eliminar lo que no sean lineas verticales
+    # kernel = np.array([[1], [1], [1], [1], [1], [1], [1]])
+    # mascara_erode = cv2.erode(mascara_combinada, kernel, iterations=1)
+    # si.mostrar_imagen(mascara_erode)
 
-    # Definir otro rango para el rojo que se encuentra en la parte superior del espectro
-    lower_red2 = np.array([160, 100, 50])  # Rango bajo para el matiz, saturación y valor
-    upper_red2 = np.array([180, 255, 255])  # Rango alto para el matiz, saturación y valor
+    # # Aplicar erode para eliminar lo que no sean lineas horizontales
+    # kernel = np.array([[1, 1, 1, 1, 1, 1, 1]])
+    # mascara_erode2 = cv2.erode(mascara_combinada, kernel, iterations=1)
+    # si.mostrar_imagen(mascara_erode2)
 
-    # Crear otra máscara para el rango superior del rojo
-    mascara_roja2 = cv2.inRange(imagen_hsv, lower_red2, upper_red2)
 
-    # Combinar ambas máscaras para cubrir todo el rango de colores rojos
-    mascara_roja = cv2.bitwise_or(mascara_roja1, cv2.bitwise_or(mascara_roja2, mascara_azul))
+    # # mezclamos las imagenes resultantes de los dos erodes
+    # mascara_erode_final = cv2.bitwise_or(mascara_erode, mascara_erode2)
+    # si.mostrar_imagen(mascara_erode_final)
+
+
+    # # Aplicar dilation para mejorar la máscara suavizada
+    # kernel = np.ones((4, 4), np.uint8)
+    # mascara_final = cv2.dilate(mascara_erode_final, kernel, iterations=1)
+
+    # Aplicar desenfoque para eliminar zonas con tonos no uniformes
+    mascara_suavizada = cv2.medianBlur(mascara_combinada, 5)
+    if showAll: si.mostrar_imagen(mascara_suavizada)
+
+    # Aplicar dilation para mejorar la máscara suavizada
+    mascara_final = cerradura(mascara_suavizada, 5)
+    if showAll: si.mostrar_imagen(mascara_final)
 
     # Aplicar la máscara a la imagen original
-    resultado = cv2.bitwise_and(img, img, mask=mascara_roja)
-    return mascara_roja
+    resultado = cv2.bitwise_and(img, img, mask=mascara_final)
+    return mascara_final

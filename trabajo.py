@@ -5,8 +5,10 @@ import funciones as fs
 
 images = [cv2.imread(f"materialSenales/{i}.ppm") for i in range(1, 13)]
 
+showAll = False
 
-imagen = images[0]
+
+imagen = images[1]
 
 si.mostrar_imagen(imagen)
 
@@ -17,14 +19,18 @@ si.mostrar_imagen(imagen)
 
 
 # Dejamos solo los colores relevantes
-imagenEnchance = fs.elimOtherColors(imagen)
-si.mostrar_imagen(imagenEnchance)
+imagenEnchanceR = fs.elimOtherColors2(imagen, True, showAll)
+if showAll: si.mostrar_imagen(imagenEnchanceR)
 
-
+imagenEnchanceA = fs.elimOtherColors2(imagen, False, showAll)
+if showAll: si.mostrar_imagen(imagenEnchanceA)
 
 # Canny
-edges = fs.cannyHSV(imagenEnchance)
-si.mostrar_imagen(edges)
+edgesR = fs.cannyHSV(imagenEnchanceR)
+if showAll: si.mostrar_imagen(edgesR)
+
+edgesA = fs.cannyHSV(imagenEnchanceA)
+if showAll: si.mostrar_imagen(edgesA)
 
 
 # edges2 = fs.laplace(imagenEnchance)
@@ -47,16 +53,29 @@ si.mostrar_imagen(edges)
 
 
 # Deteccion de circulos
-imagenCirculos = fs.detectCircles(imagen, edges)
-si.mostrar_imagen(imagenCirculos)
+imagenCirculosR = fs.detectCircles(imagen, edgesR)
+if showAll: si.mostrar_imagen(imagenCirculosR)
+
+imagenCirculosA = fs.detectCircles(imagen, edgesA)
+if showAll: si.mostrar_imagen(imagenCirculosA)
 
 
 
 # Dteccion de triangulos
-imagenTriangulos = fs.detectTriangles(imagen, edges)
-si.mostrar_imagen(imagenTriangulos)
+imagenTriangulosR = fs.detectTriangles(imagen, edgesR)
+if showAll: si.mostrar_imagen(imagenTriangulosR)
+
+imagenTriangulosA = fs.detectTriangles(imagen, edgesA)
+if showAll: si.mostrar_imagen(imagenTriangulosA)
 
 
 # Dteccion de triangulos
-imagenSquares = fs.detectSquares(imagen, edges)
-si.mostrar_imagen(imagenSquares)
+imagenSquaresR = fs.detectSquares(imagen, edgesR)
+if showAll: si.mostrar_imagen(imagenSquaresR)
+
+imagenSquaresA = fs.detectSquares(imagen, edgesA)
+si.mostrar_imagen(imagenSquaresA)
+
+
+
+
