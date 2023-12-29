@@ -6,7 +6,7 @@ import funciones as fs
 images = [cv2.imread(f"materialSenales/{i}.ppm") for i in range(1, 13)]
 
 
-imagen = images[4]
+imagen = images[0]
 
 si.mostrar_imagen(imagen)
 
@@ -21,24 +21,29 @@ imagenEnchance = fs.elimOtherColors(imagen)
 si.mostrar_imagen(imagenEnchance)
 
 
+# imagen_rgb = cv2.cvtColor(imagenEnchance, cv2.COLOR_HSV2RGB)
+
 # Canny
 edges = fs.cannyHSV(imagenEnchance)
 si.mostrar_imagen(edges)
 
+
 # edges2 = fs.laplace(imagenEnchance)
 # si.mostrar_imagen(edges2)
+
 
 # apertura = fs.apertura(edges2, 2)
 # si.mostrar_imagen(apertura)
 
-# cerradura = fs.cerradura(edges2, 3)
+# dilatacion = fs.dilatacion(apertura, 3)
+# si.mostrar_imagen(dilatacion)
+
+# cerradura = fs.cerradura(edges2, 8)
 # si.mostrar_imagen(cerradura)
 
 # erosion = fs.erosion(edges2, 3)
 # si.mostrar_imagen(erosion)
 
-# dilatacion = fs.dilatacion(edges2, 5)
-# si.mostrar_imagen(dilatacion)
 
 
 
@@ -51,3 +56,8 @@ si.mostrar_imagen(imagenCirculos)
 # Dteccion de triangulos
 imagenTriangulos = fs.detectTriangles(imagen, edges)
 si.mostrar_imagen(imagenTriangulos)
+
+
+# Dteccion de triangulos
+imagenSquares = fs.detectSquares(imagen, edges)
+si.mostrar_imagen(imagenSquares)

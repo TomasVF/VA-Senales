@@ -56,7 +56,7 @@ def laplace(imagen):
 def detectCircles(imagen, edges):
     # Apply HoughCircles to detect circles in the Canny edges
     circles = cv2.HoughCircles(edges, cv2.HOUGH_GRADIENT, dp=1, minDist=150,
-                            param1=200, param2=30, minRadius=20, maxRadius=50)
+                            param1=200, param2=30, minRadius=10, maxRadius=50)
 
     # If circles are found, draw them on the original image
     if circles is not None:
@@ -79,20 +79,58 @@ def detectTriangles(imagen, edges):
         approx = cv2.approxPolyDP(contour, epsilon, True)
         
         if len(approx) == 3:  # El contorno es un triángulo
-            triangles.append(approx)
+
+            side_lengths = [
+                cv2.norm(approx[1] - approx[0]),
+                cv2.norm(approx[2] - approx[1]),
+                cv2.norm(approx[0] - approx[2])
+            ]
+
+            # Calcular el área del triángulo
+            area = cv2.contourArea(approx)
+
+            # Verificar si el área es mayor que el valor mínimo
+            if area >= 1000 and all(abs(side_lengths[i] - side_lengths[(i + 1) % 3]) < 0.1 * sum(side_lengths) for i in range(3)):
+                triangles.append(approx)
 
     # Dibujar los triángulos encontrados en la imagen original
-    image_with_triangles = cv2.drawContours(imagen.copy(), triangles, -1, (0, 255, 0), 2)
+    image_with_triangles = cv2.drawContours(imagen, triangles, -1, (0, 255, 0), 2)
 
     return image_with_triangles
 
 
+def detectSquares(imagen, edges):
+    contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Iterating over the contours and filtering those that appear to be squares
+    squares = []
+    for contour in contours:
+        epsilon = 0.04 * cv2.arcLength(contour, True)
+        approx = cv2.approxPolyDP(contour, epsilon, True)
+        
+        if len(approx) == 4:  # The contour is a quadrilateral (could be a square)
+            # Calculate the area of the quadrilateral
+            area = cv2.contourArea(approx)
+
+            # Check if the area is greater than the minimum value
+            if area >= 1000:
+                # Check the aspect ratio to see if it's roughly a square
+                x, y, w, h = cv2.boundingRect(approx)
+                aspect_ratio = float(w) / h
+                if 0.9 <= aspect_ratio <= 1.1:
+                    squares.append(approx)
+
+    # Draw the detected squares on the original image
+    image_with_squares = cv2.drawContours(imagen, squares, -1, (0, 255, 0), 2)
+
+    return image_with_squares
+
+
 
 def cannyHSV(imagen):
-    v_channel = imagen[:, :, 2]
 
     # Apply Canny edge detection 
-    edges = cv2.Canny(v_channel, 50, 150)
+    edges = cv2.Canny(imagen, 50, 150)
     return edges
 
 # Eliminamos los colores que no aparecen en señales
