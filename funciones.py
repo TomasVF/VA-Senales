@@ -55,16 +55,63 @@ def laplace(imagen):
     return bordes_laplaciana
 
 def detectCircles(imagen, edges):
+
+    imagen_hsv = cv2.cvtColor(imagen, cv2.COLOR_BGR2HSV)
+
+    lower_white = np.array([0, 0, 200])  # Rango bajo para el matiz, saturación y valor
+    upper_white = np.array([180, 30, 255])  # Rango alto para el matiz, saturación y valor
+    mascara_blanco = cv2.inRange(imagen_hsv, lower_white, upper_white)
+
+    lower_blue = np.array([100, 100, 50])
+    upper_blue = np.array([120, 255, 255])
+    mascara_azul = cv2.inRange(imagen_hsv, lower_blue, upper_blue)
+
+    # Define the range of color for red in the HSV color space
+    lower_red1 = np.array([0, 100, 80])  # Lower range for hue, saturation, and value
+    upper_red1 = np.array([10, 255, 255])  # Upper range for hue, saturation, and value
+    mascara_roja1 = cv2.inRange(imagen_hsv, lower_red1, upper_red1)
+
+    # Define another range for red at the top of the spectrum
+    lower_red2 = np.array([160, 100, 80])  # Lower range for hue, saturation, and value
+    upper_red2 = np.array([180, 255, 255])  # Upper range for hue, saturation, and value
+    mascara_roja2 = cv2.inRange(imagen_hsv, lower_red2, upper_red2)
+
+    # Combine the red masks
+    mascara_roja = cv2.bitwise_or(mascara_roja1, mascara_roja2)
+
     # Apply HoughCircles to detect circles in the Canny edges
     circles = cv2.HoughCircles(edges, cv2.HOUGH_GRADIENT, dp=1, minDist=150,
-                            param1=1500, param2=16, minRadius=10, maxRadius=50)
+                            param1=1500, param2=13, minRadius=10, maxRadius=50)
 
     # If circles are found, draw them on the original image
     if circles is not None:
         circles = np.uint16(np.around(circles))
         for i in circles[0, :]:
-            # Draw the outer circle
-            cv2.circle(imagen, (i[0], i[1]), i[2], (0, 255, 0), 2)
+            # Extract region of interest (ROI) for each circle
+            roiR = mascara_roja[i[1]-i[2]:i[1]+i[2], i[0]-i[2]:i[0]+i[2]]
+
+            roiA = mascara_azul[i[1]-i[2]:i[1]+i[2], i[0]-i[2]:i[0]+i[2]]
+
+            roiB = mascara_blanco[i[1]-i[2]:i[1]+i[2], i[0]-i[2]:i[0]+i[2]]
+
+            # Calculate the percentage of red pixels within the circle
+            red_pixel_percentage = np.sum(roiR == 255) / float(roiR.size)
+
+            blue_pixel_percentage = np.sum(roiA == 255) / float(roiA.size)
+            
+            white_pixel_percentage = np.sum(roiB == 255) / float(roiB.size)
+
+            # Draw the outer circle in green if red pixel percentage is above a threshold, otherwise draw in red
+            if red_pixel_percentage > 0.5:
+                color = (0, 0, 255)
+            elif blue_pixel_percentage > 0.5:
+                color = (255, 0, 0)
+            elif (white_pixel_percentage+red_pixel_percentage) > 0.7:
+                color = (0, 255, 0)
+            else:
+                color = (0, 0, 0)
+            cv2.circle(imagen, (i[0], i[1]), i[2], color, 2)
+
             # Draw the center of the circle
             cv2.circle(imagen, (i[0], i[1]), 2, (0, 0, 255), 3)
     return imagen
