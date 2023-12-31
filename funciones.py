@@ -74,7 +74,7 @@ def detectCircles(imagen, edges):
 
     # Apply HoughCircles to detect circles in the Canny edges
     circles = cv2.HoughCircles(edges, cv2.HOUGH_GRADIENT, dp=1, minDist=1,
-                            param1=1500, param2=10, minRadius=10, maxRadius=50)
+                            param1=1500, param2=16, minRadius=10, maxRadius=50)
     
     if circles is not None:
         circles = np.uint16(np.around(circles))
@@ -88,8 +88,19 @@ def detectCircles(imagen, edges):
             close_circles_count = np.sum(distances < 30)  # Ajusta el valor del umbral según sea necesario
 
             # Si hay mas de 10 círculos cercanos, procesar el círculo actual
-            if close_circles_count > 10:
+            if close_circles_count > 3:
                 filtered_circles.append(i)
+            else:
+                mask1 = np.zeros_like(imagen, dtype=np.uint8)
+                cv2.circle(mask1, (i[0], i[1]), i[2], (255, 255, 255), thickness=-1)
+                imagenSoloInteriorCirculo = cv2.bitwise_and(imagen_hsv, mask1)
+                mascara_roja2 = cv2.inRange(imagenSoloInteriorCirculo, lower_red2, upper_red2)
+                mascara_roja1 = cv2.inRange(imagenSoloInteriorCirculo, lower_red1, upper_red1)
+                mascara_roja = cv2.bitwise_or(mascara_roja1, mascara_roja2)
+                roiR = mascara_roja[i[1]-i[2]:i[1]+i[2], i[0]-i[2]:i[0]+i[2]]
+                red_pixel_percentage = np.sum(roiR == 255) / float(roiR.size)
+                if red_pixel_percentage > 0.5:
+                    filtered_circles.append(i)
 
 
         # If circles are found, draw them on the original image
