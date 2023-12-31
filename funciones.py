@@ -73,80 +73,118 @@ def detectCircles(imagen, edges):
     upper_red2 = np.array([180, 255, 255])  # Upper range for hue, saturation, and value
 
     # Apply HoughCircles to detect circles in the Canny edges
-    circles = cv2.HoughCircles(edges, cv2.HOUGH_GRADIENT, dp=1, minDist=150,
-                            param1=1500, param2=16, minRadius=10, maxRadius=50)
-
-    # If circles are found, draw them on the original image
+    circles = cv2.HoughCircles(edges, cv2.HOUGH_GRADIENT, dp=1, minDist=1,
+                            param1=1500, param2=10, minRadius=10, maxRadius=50)
+    
     if circles is not None:
         circles = np.uint16(np.around(circles))
+        # Iterar a través de los círculos detectados
+        filtered_circles = []
         for i in circles[0, :]:
+            # Calcular la distancia entre el centro del círculo actual y los círculos existentes
+            distances = np.sqrt(np.sum((circles[0, :, :2] - i[:2])**2, axis=1))
+
+            # Contar cuántos círculos cercanos hay
+            close_circles_count = np.sum(distances < 30)  # Ajusta el valor del umbral según sea necesario
+
+            # Si hay mas de 10 círculos cercanos, procesar el círculo actual
+            if close_circles_count > 10:
+                filtered_circles.append(i)
 
 
-            mask1 = np.zeros_like(imagen, dtype=np.uint8)
-            cv2.circle(mask1, (i[0], i[1]), i[2], (255, 255, 255), thickness=-1)
-            imagenSoloInteriorCirculo = cv2.bitwise_and(imagen_hsv, mask1)
+        # If circles are found, draw them on the original image
+        if filtered_circles is not None:
+            accepted_circles = []
+            for i in filtered_circles:
+                mask1 = np.zeros_like(imagen, dtype=np.uint8)
+                cv2.circle(mask1, (i[0], i[1]), i[2], (255, 255, 255), thickness=-1)
+                imagenSoloInteriorCirculo = cv2.bitwise_and(imagen_hsv, mask1)
 
-            mask2 = np.zeros_like(imagen, dtype=np.uint8)
-            cv2.circle(mask2, (i[0], i[1]), i[2], (255, 255, 255), thickness=10)
-            imagenSoloCircunferencia = cv2.bitwise_and(imagen_hsv, mask2)
-
-
-            mascara_roja22 = cv2.inRange(imagenSoloCircunferencia, lower_red2, upper_red2)
-            mascara_roja12 = cv2.inRange(imagenSoloCircunferencia, lower_red1, upper_red1)
-            mascara_roja02 = cv2.bitwise_or(mascara_roja12, mascara_roja22)
-
-            # a es el porcentaje de pixeles rojos dentro de la circunferencia de thickness 10
-            a = np.sum(mascara_roja02[i[1]-i[2]:i[1]+i[2], i[0]-i[2]:i[0]+i[2]] == 255) / np.sum(mask2 == (255, 255, 255))
+                mask2 = np.zeros_like(imagen, dtype=np.uint8)
+                cv2.circle(mask2, (i[0], i[1]), i[2], (255, 255, 255), thickness=10)
+                imagenSoloCircunferencia = cv2.bitwise_and(imagen_hsv, mask2)
 
 
-            mascara_roja2 = cv2.inRange(imagenSoloInteriorCirculo, lower_red2, upper_red2)
-            mascara_roja1 = cv2.inRange(imagenSoloInteriorCirculo, lower_red1, upper_red1)
-            mascara_roja = cv2.bitwise_or(mascara_roja1, mascara_roja2)
+                mascara_roja22 = cv2.inRange(imagenSoloCircunferencia, lower_red2, upper_red2)
+                mascara_roja12 = cv2.inRange(imagenSoloCircunferencia, lower_red1, upper_red1)
+                mascara_roja02 = cv2.bitwise_or(mascara_roja12, mascara_roja22)
 
-            mascara_blanco = cv2.inRange(imagenSoloInteriorCirculo, lower_white, upper_white)
-
-            mascara_azul = cv2.inRange(imagenSoloInteriorCirculo, lower_blue, upper_blue)
-
-
-            # Extract region of interest (ROI) for each circle
-            roiR = mascara_roja[i[1]-i[2]:i[1]+i[2], i[0]-i[2]:i[0]+i[2]]
-
-            roiA = mascara_azul[i[1]-i[2]:i[1]+i[2], i[0]-i[2]:i[0]+i[2]]
-
-            roiB = mascara_blanco[i[1]-i[2]:i[1]+i[2], i[0]-i[2]:i[0]+i[2]]
-
-            # Calculate the percentage of red pixels within the circle
-            red_pixel_percentage = np.sum(roiR == 255) / float(roiR.size)
-
-            blue_pixel_percentage = np.sum(roiA == 255) / float(roiA.size)
-            
-            white_pixel_percentage = np.sum(roiB == 255) / float(roiB.size)
+                # a es el porcentaje de pixeles rojos dentro de la circunferencia de thickness 10
+                a = np.sum(mascara_roja02[i[1]-i[2]:i[1]+i[2], i[0]-i[2]:i[0]+i[2]] == 255) / np.sum(mask2 == (255, 255, 255))
 
 
-            # si.mostrar_imagen(imagen[i[1]-i[2]:i[1]+i[2], i[0]-i[2]:i[0]+i[2]])
+                mascara_roja2 = cv2.inRange(imagenSoloInteriorCirculo, lower_red2, upper_red2)
+                mascara_roja1 = cv2.inRange(imagenSoloInteriorCirculo, lower_red1, upper_red1)
+                mascara_roja = cv2.bitwise_or(mascara_roja1, mascara_roja2)
+
+                mascara_blanco = cv2.inRange(imagenSoloInteriorCirculo, lower_white, upper_white)
+
+                mascara_azul = cv2.inRange(imagenSoloInteriorCirculo, lower_blue, upper_blue)
 
 
-            # Draw the outer circle in green if red pixel percentage is above a threshold, otherwise draw in red
-            if red_pixel_percentage > 0.5:
-                color = (0, 0, 255)
-                label = "Stop"
-            elif blue_pixel_percentage > 0.5:
-                color = (255, 0, 0)
-                label = "Obligacion"
-            elif (white_pixel_percentage+red_pixel_percentage) > 0.6 and a > 0.1:
-                color = (0, 255, 0)
-                label = "Prohibicion"
-            else:
-                color = (0, 0, 0)
-                label = "Error"
-            cv2.circle(imagen, (i[0], i[1]), i[2], color, 2)
+                # Extract region of interest (ROI) for each circle
+                roiR = mascara_roja[i[1]-i[2]:i[1]+i[2], i[0]-i[2]:i[0]+i[2]]
 
-            # Draw the center of the circle
-            cv2.circle(imagen, (i[0], i[1]), 2, (0, 0, 255), 3)
+                roiA = mascara_azul[i[1]-i[2]:i[1]+i[2], i[0]-i[2]:i[0]+i[2]]
+
+                roiB = mascara_blanco[i[1]-i[2]:i[1]+i[2], i[0]-i[2]:i[0]+i[2]]
+
+                # Calculate the percentage of red pixels within the circle
+                red_pixel_percentage = np.sum(roiR == 255) / float(roiR.size)
+
+                blue_pixel_percentage = np.sum(roiA == 255) / float(roiA.size)
+                
+                white_pixel_percentage = np.sum(roiB == 255) / float(roiB.size)
 
 
-            cv2.putText(imagen, label, (i[0]-int(i[2]/2), i[1]+int(i[2]/2)+30),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                # si.mostrar_imagen(imagen[i[1]-i[2]:i[1]+i[2], i[0]-i[2]:i[0]+i[2]])
+
+                # Draw the outer circle in green if red pixel percentage is above a threshold, otherwise draw in red
+                if red_pixel_percentage > 0.5:
+                    color = (0, 0, 255)
+                    label = "Stop"
+                    accepted_circles.append([i, color, label])
+                elif blue_pixel_percentage > 0.5:
+                    color = (255, 0, 0)
+                    label = "Obligacion"
+                    accepted_circles.append([i, color, label])
+                elif (white_pixel_percentage+red_pixel_percentage) > 0.6 and a > 0.15:
+                    color = (0, 255, 0)
+                    label = "Prohibicion"
+                    accepted_circles.append([i, color, label])
+                else:
+                    continue
+                
+
+        if accepted_circles is not None:
+            final_circles = []
+            for i in accepted_circles:
+                cont = False
+                if final_circles is None: 
+                    final_circles.append(i)
+                    continue
+                for exist in final_circles:
+                    distance = np.sqrt(np.sum((i[0][:2] - exist[0][:2])**2))
+                    if distance > 0 and distance < 100:
+                        cont = True
+                        continue
+                if cont:
+                    continue
+                final_circles.append(i)
+
+            for i in final_circles:
+                circ = i[0]
+                color = i[1]
+                label = i[2]
+
+                cv2.circle(imagen, (circ[0], circ[1]), circ[2], color, 2)
+
+                # Draw the center of the circle
+                cv2.circle(imagen, (circ[0], circ[1]), 2, (0, 0, 255), 3)
+
+
+                cv2.putText(imagen, label, (circ[0]-int(circ[2]/2), circ[1]+int(circ[2]/2)+30),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
 
     return imagen
@@ -335,7 +373,7 @@ def elimOtherColors(img, red, showAll):
     mascara_suavizada = cv2.medianBlur(mascara_prueba, 9)
     if showAll: si.mostrar_imagen(mascara_suavizada)
 
-    mascaraladf = cerradura(mascara_suavizada, 15)
+    mascaraladf = cerradura(mascara_suavizada, 18)
 
     return mascaraladf
 

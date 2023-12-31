@@ -5,7 +5,7 @@ import funciones as fs
 
 images = [cv2.imread(f"materialSenales/{i}.ppm") for i in range(1, 13)]
 
-showAll = True
+showAll = False
 
 
 imagen = images[1]
