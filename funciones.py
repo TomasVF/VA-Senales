@@ -56,6 +56,9 @@ def laplace(imagen):
 
 def detectCircles(imagen, edges):
 
+    # Create a mask for the detected squares
+    mask_circles = np.zeros_like(imagen, dtype=np.uint8)
+
     imagen_hsv = cv2.cvtColor(imagen, cv2.COLOR_BGR2HSV)
 
     lower_white = np.array([0, 0, 200])  # Rango bajo para el matiz, saturación y valor
@@ -159,13 +162,13 @@ def detectCircles(imagen, edges):
                     color = (255, 0, 0)
                     label = "Obligacion"
                     accepted_circles.append([i, color, label])
-                elif (white_pixel_percentage+red_pixel_percentage) > 0.6 and a > 0.15:
+                elif (white_pixel_percentage+red_pixel_percentage) > 0.6 and a > 0.16:
                     color = (0, 255, 0)
                     label = "Prohibicion"
                     accepted_circles.append([i, color, label])
                 else:
                     continue
-                
+            
 
         if accepted_circles is not None:
             final_circles = []
@@ -196,9 +199,12 @@ def detectCircles(imagen, edges):
 
                 cv2.putText(imagen, label, (circ[0]-int(circ[2]/2), circ[1]+int(circ[2]/2)+30),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+            
+                cv2.circle(mask_circles, (i[0][0], i[0][1]), i[0][2], (255, 255, 255), thickness=cv2.FILLED)
 
 
-    return imagen
+
+    return imagen, cv2.bitwise_not(mask_circles)
 
 
 def detectTriangles(imagen, edges):
@@ -225,6 +231,9 @@ def detectTriangles(imagen, edges):
             if area >= 1000 and all(abs(side_lengths[i] - side_lengths[(i + 1) % 3]) < 0.1 * sum(side_lengths) for i in range(3)):
                 triangles.append(approx)
 
+    # Create a mask for the detected squares
+    mask_triangles = np.zeros_like(imagen, dtype=np.uint8)
+
     for triangle in triangles:
 
         # Obtener las coordenadas de los vértices del triángulo
@@ -239,14 +248,7 @@ def detectTriangles(imagen, edges):
 
         d2 = vertices_sorted[2][1] - vertices_sorted[1][1]
 
-        # Obtener la máscara del triángulo
-        mask_triangle = np.zeros_like(imagen, dtype=np.uint8)
-        cv2.drawContours(mask_triangle, [triangle], -1, (255, 255, 255), thickness=cv2.FILLED)
-
-        # Contar píxeles negros en la región del triángulo
-        black_pixel_count = cv2.countNonZero(cv2.bitwise_not(cv2.cvtColor(mask_triangle, cv2.COLOR_BGR2GRAY)))
-
-
+        cv2.drawContours(mask_triangles, triangles, -1, (255, 255, 255), thickness=cv2.FILLED)
 
 
         M = cv2.moments(triangle)
@@ -264,7 +266,7 @@ def detectTriangles(imagen, edges):
     # Dibujar los triángulos encontrados en la imagen original
     image_with_triangles = cv2.drawContours(imagen, triangles, -1, (0, 255, 0), 2)
 
-    return image_with_triangles
+    return image_with_triangles, cv2.bitwise_not(mask_triangles)
 
 
 def detectSquares(imagen, edges):
@@ -297,18 +299,27 @@ def detectSquares(imagen, edges):
             # Check if the angles are approximately 90 degrees
             rect = cv2.minAreaRect(contour)
             angles = rect[-1]
-            if 80 <= abs(angles) <= 100:
+            if 80 <= abs(angles) <= 95:
                 # Calculate the area of the quadrilateral
                 area = cv2.contourArea(approx)
 
                 # Check if the area is greater than the minimum value
                 if area >= 100:
-                    # Check the aspect ratio to see if it's roughly a square
-                    x, y, w, h = cv2.boundingRect(approx)
-                    aspect_ratio = float(w) / h
-                    if 0.5 <= aspect_ratio <= 1.1:
-                        if porcentaje_pixeles_azules > 0.1:
-                            squares.append(approx)
+                    if porcentaje_pixeles_azules > 0.1:
+                            counts = True
+                            # Obtiene las coordenadas de los vértices
+                            vertices = approx.reshape(-1, 2)
+                            for i in range(4):
+                                min1 = []
+                                min2 = []
+                                for j in range(4):
+                                    if j == i: continue
+                                    min1.append(np.abs(vertices[i][0] - vertices[j][0]))
+                                    min2.append(np.abs(vertices[i][1] - vertices[j][1]))
+                                if 1000*np.min(min1)/area > 40 or 1000*np.min(min2)/area > 40 :
+                                    counts = False
+                            if counts:
+                                squares.append(approx)
     # Draw the detected squares on the original image
     image_with_squares = cv2.drawContours(imagen, squares, -1, (0, 255, 0), 2)
 
@@ -318,7 +329,6 @@ def detectSquares(imagen, edges):
 
     # Invert the mask to keep the areas outside the squares
     mask_inverse = cv2.bitwise_not(mask_squares)
-    result_image = cv2.bitwise_and(imagen, mask_inverse)
 
 
     for square in squares:
@@ -332,7 +342,7 @@ def detectSquares(imagen, edges):
         # Put text below the square
         cv2.putText(image_with_squares, 'Indication', (cx - 30, cy), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2, cv2.LINE_AA)
 
-    return image_with_squares, result_image
+    return image_with_squares, mask_inverse
 
 
 
@@ -368,27 +378,6 @@ def elimOtherColors(img, red, showAll, value):
     if showAll: si.mostrar_imagen(mascara_combinada)
         
 
-
-    # # Aplicar erode para eliminar lo que no sean lineas verticales
-    # kernel = np.array([[1], [1], [1], [1], [1], [1], [1]])
-    # mascara_erode = cv2.erode(mascara_combinada, kernel, iterations=1)
-    # si.mostrar_imagen(mascara_erode)
-
-    # # Aplicar erode para eliminar lo que no sean lineas horizontales
-    # kernel = np.array([[1, 1, 1, 1, 1, 1, 1]])
-    # mascara_erode2 = cv2.erode(mascara_combinada, kernel, iterations=1)
-    # si.mostrar_imagen(mascara_erode2)
-
-
-    # # mezclamos las imagenes resultantes de los dos erodes
-    # mascara_erode_final = cv2.bitwise_or(mascara_erode, mascara_erode2)
-    # si.mostrar_imagen(mascara_erode_final)
-
-
-    # # Aplicar dilation para mejorar la máscara suavizada
-    # kernel = np.ones((4, 4), np.uint8)
-    # mascara_final = cv2.dilate(mascara_erode_final, kernel, iterations=1)
-
     # Aplicar desenfoque para eliminar zonas con tonos no uniformes
     mascara_suavizada = cv2.medianBlur(mascara_combinada, 5)
     if showAll: si.mostrar_imagen(mascara_suavizada)
@@ -412,3 +401,38 @@ def elimOtherColors(img, red, showAll, value):
     mascaraladf = cerradura(mascara_suavizada, 18)
 
     return mascaraladf
+
+
+
+# Eliminamos los colores que no aparecen en señales
+def elimOtherColorsSimple(img, red, showAll, value):
+    imagen_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+
+    if red==False :
+        lower_blue = np.array([100, 100, 50])
+        upper_blue = np.array([120, 255, 255])
+        mascara_azul = cv2.inRange(imagen_hsv, lower_blue, upper_blue)
+        mascara_combinada = mascara_azul
+    else:
+        # Definir el rango de color para el rojo en el espacio de color HSV
+        lower_red1 = np.array([0, 100, 80])  # Rango bajo para el matiz, saturación y valor
+        upper_red1 = np.array([10, 255, 255])  # Rango alto para el matiz, saturación y valor
+        mascara_roja1 = cv2.inRange(imagen_hsv, lower_red1, upper_red1)
+
+        # Definir otro rango para el rojo que se encuentra en la parte superior del espectro
+        lower_red2 = np.array([160, 100, 80])  # Rango bajo para el matiz, saturación y valor
+        upper_red2 = np.array([180, 255, 255])  # Rango alto para el matiz, saturación y valor
+        mascara_roja2 = cv2.inRange(imagen_hsv, lower_red2, upper_red2)
+
+        # Combinar ambas máscaras para cubrir todo el rango de colores rojos
+        mascara_combinada = cv2.bitwise_or(mascara_roja1, mascara_roja2)
+
+    if showAll: si.mostrar_imagen(mascara_combinada)
+        
+
+
+    # Aplicar desenfoque para eliminar zonas con tonos no uniformes
+    mascara_suavizada = cv2.medianBlur(mascara_combinada, 5)
+    if showAll: si.mostrar_imagen(mascara_suavizada)
+
+    return mascara_suavizada

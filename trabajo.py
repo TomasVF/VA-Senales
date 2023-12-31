@@ -13,9 +13,23 @@ imagen = images[10]
 si.mostrar_imagen(imagen)
 
 
-# # Eliminar ruido
-# imagen = cv2.GaussianBlur(imagen, (7,7), 0)
-# si.mostrar_imagen(imagen)
+image_hsv = cv2.cvtColor(imagen, cv2.COLOR_BGR2HSV)
+
+# Separa los canales HSV
+h, s, v = cv2.split(image_hsv)
+
+# Aplica la ecualización de histograma al canal de valor (v)
+equalized_v = cv2.equalizeHist(v)
+
+# Combina los canales HSV con el canal de valor ecualizado
+equalized_image_hsv = cv2.merge([h, s, equalized_v])
+
+# Convierte la imagen de vuelta a BGR
+equalized_image_bgr = cv2.cvtColor(equalized_image_hsv, cv2.COLOR_HSV2BGR)
+
+if showAll:si.mostrar_imagen(equalized_image_bgr)
+
+
 
 
 # Dejamos solo los colores relevantes
@@ -34,21 +48,36 @@ if showAll: si.mostrar_imagen(edgesA)
 
 
 # Deteccion de circulos
-imagenCirculosR = fs.detectCircles(imagen, edgesR)
+imagenCirculosR, maskDeleted0 = fs.detectCircles(imagen, edgesR)
 if showAll: si.mostrar_imagen(imagenCirculosR)
 
-imagenCirculosA = fs.detectCircles(imagen, edgesA)
+imagenCirculosA, maskDeleted1 = fs.detectCircles(imagen, edgesA)
 if showAll: si.mostrar_imagen(imagenCirculosA)
 
 
 
 # Dteccion de triangulos
-imagenTriangulosR = fs.detectTriangles(imagen, edgesR)
+imagenTriangulosR, maskDeleted2 = fs.detectTriangles(imagen, edgesR)
 if showAll: si.mostrar_imagen(imagenTriangulosR)
 
 
-imagenSquaresA, imageDeleted = fs.detectSquares(imagen, edgesA)
+imagenSquaresA, maskDeleted3 = fs.detectSquares(imagen, edgesA)
 if showAll: si.mostrar_imagen(imagenSquaresA)
+
+
+
+maskDeletedFInal = cv2.bitwise_and(maskDeleted0, cv2.bitwise_and(maskDeleted1, cv2.bitwise_and(maskDeleted2, maskDeleted3)))
+
+
+
+imagenDeleted = cv2.bitwise_and(imagen, maskDeletedFInal)
+if showAll:si.mostrar_imagen(imagenDeleted)
+
+
+
+
+
+
 
 
 
@@ -59,10 +88,10 @@ if showAll: si.mostrar_imagen(imagenSquaresA)
 
 
 # Dejamos solo los colores relevantes
-imagenEnchanceR = fs.elimOtherColors(imagen, True, showAll, 9)
+imagenEnchanceR = fs.elimOtherColors(imagenDeleted, True, showAll, 9)
 if showAll: si.mostrar_imagen(imagenEnchanceR)
 
-imagenEnchanceA = fs.elimOtherColors(imagen, False, showAll, 9)
+imagenEnchanceA = fs.elimOtherColors(imagenDeleted, False, showAll, 9)
 if showAll: si.mostrar_imagen(imagenEnchanceA)
 
 # Canny
@@ -77,20 +106,20 @@ if showAll: si.mostrar_imagen(edgesA)
 
 
 # Deteccion de circulos
-imagenCirculosR = fs.detectCircles(imagenSquaresA, edgesR)
+imagenCirculosR, maskDeleted3 = fs.detectCircles(imagenSquaresA, edgesR)
 if showAll: si.mostrar_imagen(imagenCirculosR)
 
-imagenCirculosA = fs.detectCircles(imagenSquaresA, edgesA)
+imagenCirculosA, maskDeleted3 = fs.detectCircles(imagenSquaresA, edgesA)
 if showAll: si.mostrar_imagen(imagenCirculosA)
 
 
 
 # Dteccion de triangulos
-imagenTriangulosR = fs.detectTriangles(imagenSquaresA, edgesR)
+imagenTriangulosR, maskDeleted3 = fs.detectTriangles(imagenSquaresA, edgesR)
 if showAll: si.mostrar_imagen(imagenTriangulosR)
 
 
-imagenSquaresA = fs.detectSquares(imagenSquaresA, edgesA)
+imagenSquaresA, maskDeleted3 = fs.detectSquares(imagenSquaresA, edgesA)
 si.mostrar_imagen(imagenSquaresA)
 
 
