@@ -60,33 +60,54 @@ def detectCircles(imagen, edges):
 
     lower_white = np.array([0, 0, 200])  # Rango bajo para el matiz, saturación y valor
     upper_white = np.array([180, 30, 255])  # Rango alto para el matiz, saturación y valor
-    mascara_blanco = cv2.inRange(imagen_hsv, lower_white, upper_white)
 
     lower_blue = np.array([100, 100, 50])
     upper_blue = np.array([120, 255, 255])
-    mascara_azul = cv2.inRange(imagen_hsv, lower_blue, upper_blue)
 
     # Define the range of color for red in the HSV color space
     lower_red1 = np.array([0, 100, 80])  # Lower range for hue, saturation, and value
     upper_red1 = np.array([10, 255, 255])  # Upper range for hue, saturation, and value
-    mascara_roja1 = cv2.inRange(imagen_hsv, lower_red1, upper_red1)
 
     # Define another range for red at the top of the spectrum
     lower_red2 = np.array([160, 100, 80])  # Lower range for hue, saturation, and value
     upper_red2 = np.array([180, 255, 255])  # Upper range for hue, saturation, and value
-    mascara_roja2 = cv2.inRange(imagen_hsv, lower_red2, upper_red2)
-
-    # Combine the red masks
-    mascara_roja = cv2.bitwise_or(mascara_roja1, mascara_roja2)
 
     # Apply HoughCircles to detect circles in the Canny edges
     circles = cv2.HoughCircles(edges, cv2.HOUGH_GRADIENT, dp=1, minDist=150,
-                            param1=1500, param2=13, minRadius=10, maxRadius=50)
+                            param1=1500, param2=16, minRadius=10, maxRadius=50)
 
     # If circles are found, draw them on the original image
     if circles is not None:
         circles = np.uint16(np.around(circles))
         for i in circles[0, :]:
+
+
+            mask1 = np.zeros_like(imagen, dtype=np.uint8)
+            cv2.circle(mask1, (i[0], i[1]), i[2], (255, 255, 255), thickness=-1)
+            imagenSoloInteriorCirculo = cv2.bitwise_and(imagen_hsv, mask1)
+
+            mask2 = np.zeros_like(imagen, dtype=np.uint8)
+            cv2.circle(mask2, (i[0], i[1]), i[2], (255, 255, 255), thickness=10)
+            imagenSoloCircunferencia = cv2.bitwise_and(imagen_hsv, mask2)
+
+
+            mascara_roja22 = cv2.inRange(imagenSoloCircunferencia, lower_red2, upper_red2)
+            mascara_roja12 = cv2.inRange(imagenSoloCircunferencia, lower_red1, upper_red1)
+            mascara_roja02 = cv2.bitwise_or(mascara_roja12, mascara_roja22)
+
+            # a es el porcentaje de pixeles rojos dentro de la circunferencia de thickness 10
+            a = np.sum(mascara_roja02[i[1]-i[2]:i[1]+i[2], i[0]-i[2]:i[0]+i[2]] == 255) / np.sum(mask2 == (255, 255, 255))
+
+
+            mascara_roja2 = cv2.inRange(imagenSoloInteriorCirculo, lower_red2, upper_red2)
+            mascara_roja1 = cv2.inRange(imagenSoloInteriorCirculo, lower_red1, upper_red1)
+            mascara_roja = cv2.bitwise_or(mascara_roja1, mascara_roja2)
+
+            mascara_blanco = cv2.inRange(imagenSoloInteriorCirculo, lower_white, upper_white)
+
+            mascara_azul = cv2.inRange(imagenSoloInteriorCirculo, lower_blue, upper_blue)
+
+
             # Extract region of interest (ROI) for each circle
             roiR = mascara_roja[i[1]-i[2]:i[1]+i[2], i[0]-i[2]:i[0]+i[2]]
 
@@ -101,19 +122,33 @@ def detectCircles(imagen, edges):
             
             white_pixel_percentage = np.sum(roiB == 255) / float(roiB.size)
 
+
+            # si.mostrar_imagen(imagen[i[1]-i[2]:i[1]+i[2], i[0]-i[2]:i[0]+i[2]])
+
+
             # Draw the outer circle in green if red pixel percentage is above a threshold, otherwise draw in red
             if red_pixel_percentage > 0.5:
                 color = (0, 0, 255)
+                label = "Stop"
             elif blue_pixel_percentage > 0.5:
                 color = (255, 0, 0)
-            elif (white_pixel_percentage+red_pixel_percentage) > 0.7:
+                label = "Obligacion"
+            elif (white_pixel_percentage+red_pixel_percentage) > 0.6 and a > 0.1:
                 color = (0, 255, 0)
+                label = "Prohibicion"
             else:
                 color = (0, 0, 0)
+                label = "Error"
             cv2.circle(imagen, (i[0], i[1]), i[2], color, 2)
 
             # Draw the center of the circle
             cv2.circle(imagen, (i[0], i[1]), 2, (0, 0, 255), 3)
+
+
+            cv2.putText(imagen, label, (i[0]-int(i[2]/2), i[1]+int(i[2]/2)+30),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
+
     return imagen
 
 
@@ -140,6 +175,43 @@ def detectTriangles(imagen, edges):
             # Verificar si el área es mayor que el valor mínimo
             if area >= 1000 and all(abs(side_lengths[i] - side_lengths[(i + 1) % 3]) < 0.1 * sum(side_lengths) for i in range(3)):
                 triangles.append(approx)
+
+    for triangle in triangles:
+
+        # Obtener las coordenadas de los vértices del triángulo
+        vertex1 = tuple(triangle[0][0])
+        vertex2 = tuple(triangle[1][0])
+        vertex3 = tuple(triangle[2][0])
+
+        # Organizar los vértices en orden de coordenada y
+        vertices_sorted = sorted([vertex1, vertex2, vertex3], key=lambda vertex: vertex[1])
+
+        d1 = vertices_sorted[1][1] - vertices_sorted[0][1]
+
+        d2 = vertices_sorted[2][1] - vertices_sorted[1][1]
+
+        # Obtener la máscara del triángulo
+        mask_triangle = np.zeros_like(imagen, dtype=np.uint8)
+        cv2.drawContours(mask_triangle, [triangle], -1, (255, 255, 255), thickness=cv2.FILLED)
+
+        # Contar píxeles negros en la región del triángulo
+        black_pixel_count = cv2.countNonZero(cv2.bitwise_not(cv2.cvtColor(mask_triangle, cv2.COLOR_BGR2GRAY)))
+
+        print(black_pixel_count)
+
+
+
+        M = cv2.moments(triangle)
+        cx = int(M["m10"] / M["m00"])
+        cy = int(M["m01"] / M["m00"])
+
+        # Escribir el nombre debajo del triángulo
+        font = cv2.FONT_HERSHEY_SIMPLEX
+
+        if(d2>d1):
+            cv2.putText(imagen, 'Ceda', (cx - 20, cy + 50), font, 0.5, (0, 255, 0), 2, cv2.LINE_AA)
+        else:
+            cv2.putText(imagen, 'Peligro', (cx - 20, cy + 50), font, 0.5, (0, 255, 0), 2, cv2.LINE_AA)
 
     # Dibujar los triángulos encontrados en la imagen original
     image_with_triangles = cv2.drawContours(imagen, triangles, -1, (0, 255, 0), 2)
@@ -170,6 +242,21 @@ def detectSquares(imagen, edges):
 
     # Draw the detected squares on the original image
     image_with_squares = cv2.drawContours(imagen, squares, -1, (0, 255, 0), 2)
+
+
+    for square in squares:
+        # Get the bounding box of the square
+        x, y, w, h = cv2.boundingRect(square)
+
+        # Calculate the center of the bounding box
+        cx = x + w // 2
+        cy = y + h + 20  # Adjust the distance below the square
+
+        # Put text below the square
+        cv2.putText(image_with_squares, 'Indicacion', (cx - 30, cy), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2, cv2.LINE_AA)
+
+
+
 
     return image_with_squares
 
@@ -233,7 +320,7 @@ def elimOtherColors(img, red, showAll):
     if showAll: si.mostrar_imagen(mascara_suavizada)
 
     # Aplicar dilation para mejorar la máscara suavizada
-    mascara_final = dilatacion(mascara_suavizada, 10)
+    mascara_final = dilatacion(mascara_suavizada, 4)
     if showAll: si.mostrar_imagen(mascara_final)
 
 
@@ -248,9 +335,9 @@ def elimOtherColors(img, red, showAll):
     mascara_suavizada = cv2.medianBlur(mascara_prueba, 9)
     if showAll: si.mostrar_imagen(mascara_suavizada)
 
-    # Aplicar la máscara a la imagen original
-    resultado = cv2.bitwise_and(img, img, mask=mascara_suavizada)
-    return mascara_suavizada
+    mascaraladf = cerradura(mascara_suavizada, 15)
+
+    return mascaraladf
 
 
 

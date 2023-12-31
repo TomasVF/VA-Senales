@@ -5,10 +5,10 @@ import funciones as fs
 
 images = [cv2.imread(f"materialSenales/{i}.ppm") for i in range(1, 13)]
 
-showAll = False
+showAll = True
 
 
-imagen = images[11]
+imagen = images[1]
 
 si.mostrar_imagen(imagen)
 
@@ -19,10 +19,10 @@ si.mostrar_imagen(imagen)
 
 
 # Dejamos solo los colores relevantes
-imagenEnchanceR = fs.elimOtherColors2(imagen, True, showAll)
+imagenEnchanceR = fs.elimOtherColors(imagen, True, showAll)
 if showAll: si.mostrar_imagen(imagenEnchanceR)
 
-imagenEnchanceA = fs.elimOtherColors2(imagen, False, showAll)
+imagenEnchanceA = fs.elimOtherColors(imagen, False, showAll)
 if showAll: si.mostrar_imagen(imagenEnchanceA)
 
 # Canny
