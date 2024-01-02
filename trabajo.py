@@ -8,7 +8,7 @@ images = [cv2.imread(f"materialSenales/{i}.ppm") for i in range(1, 13)]
 showAll = False
 
 
-imagen = images[10]
+imagen = images[11]
 
 si.mostrar_imagen(imagen)
 
@@ -27,9 +27,11 @@ equalized_image_hsv = cv2.merge([h, s, equalized_v])
 # Convierte la imagen de vuelta a BGR
 equalized_image_bgr = cv2.cvtColor(equalized_image_hsv, cv2.COLOR_HSV2BGR)
 
-if showAll:si.mostrar_imagen(equalized_image_bgr)
+if showAll: si.mostrar_imagen(equalized_image_bgr)
 
 
+if np.median(v) < 80:
+    imagen = equalized_image_bgr
 
 
 # Dejamos solo los colores relevantes
