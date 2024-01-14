@@ -66,18 +66,21 @@ def detectCircles(imagen, edges, imagenResult, va=False):
 
     # rangos de pixeles blancos
     lower_white = np.array([0, 0, 150])
-    upper_white = np.array([180, 30, 255])
+    upper_white = np.array([180, 60, 255])
+
+    lower_black = np.array([0, 0, 0])
+    upper_black = np.array([180, 255, 30])
 
     # rangos de pixeles azules
-    lower_blue = np.array([100, 100, 80])
+    lower_blue = np.array([100, 100, 90])
     upper_blue = np.array([120, 255, 255])
 
     # rangos de pixeles rojos
-    lower_red1 = np.array([0, 100, 80]) 
+    lower_red1 = np.array([0, 100, 50]) 
     upper_red1 = np.array([10, 255, 255])
 
     # rangos de pixeles rojos
-    lower_red2 = np.array([160, 100, 80])
+    lower_red2 = np.array([160, 100, 50])
     upper_red2 = np.array([180, 255, 255])
 
     # Se aplica HoughCircles
@@ -116,7 +119,7 @@ def detectCircles(imagen, edges, imagenResult, va=False):
                 mascara_roja = cv2.bitwise_or(mascara_roja1, mascara_roja2)
                 roiR = mascara_roja[i[1]-i[2]:i[1]+i[2], i[0]-i[2]:i[0]+i[2]]
                 red_pixel_percentage = np.sum(roiR == 255) / float(roiR.size)
-                if red_pixel_percentage > 0.5 and np.std(roiR) > 126:
+                if red_pixel_percentage > 0.6 and np.std(roiR) > 126:
                     filtered_circles.append(i)
 
 
@@ -153,6 +156,9 @@ def detectCircles(imagen, edges, imagenResult, va=False):
 
                 mascara_blanco = cv2.inRange(imagenSoloInteriorCirculo, lower_white, upper_white)
 
+                mascara_negro = cv2.inRange(imagen_hsv, lower_black, upper_black)
+                
+
                 mascara_azul = cv2.inRange(imagenSoloInteriorCirculo, lower_blue, upper_blue)
 
 
@@ -184,6 +190,13 @@ def detectCircles(imagen, edges, imagenResult, va=False):
 
                 roiB = mascara_blanco[i[1]-i[2]:i[1]+i[2], i[0]-i[2]:i[0]+i[2]]
 
+                roiN = mascara_negro[i[1]-i[2]:i[1]+i[2], i[0]-i[2]:i[0]+i[2]]
+
+                
+
+                if va==True:
+                    si.mostrar_imagen(roiB)
+
                 # Se calcula el porcentaje de píxeles de cada color para el ROI
                 red_pixel_percentage = np.sum(roiR == 255) / float(roiR.size)
 
@@ -191,6 +204,7 @@ def detectCircles(imagen, edges, imagenResult, va=False):
                 
                 white_pixel_percentage = np.sum(roiB == 255) / float(roiB.size)
 
+                black_pixel_percentage = np.sum(roiN == 255) / float(roiN.size)
                 
                 
                 tamanio_roiR = roiR.shape[0] // 3
@@ -212,26 +226,29 @@ def detectCircles(imagen, edges, imagenResult, va=False):
                 parte2B = roiB[tamanio_roiB:2*tamanio_roiB, :]
                 white_pixel_percentage_midel = np.sum(parte2B == 255) / float(parte2B.size)
 
+                
+
                 # Se comprueban los porcentajes de color y el valor a para identificar las señales y su tipo
-                if red_pixel_percentage > 0.6 and white_pixel_percentage > 0.03 and white_pixel_percentage < 0.1 and np.std(imagenSoloInteriorCirculo) > 5:
+                if red_pixel_percentage > 0.6 and white_pixel_percentage > 0.03  and np.std(imagenSoloInteriorCirculo) > 5 and red_pixel_simetry > 0.3 and white_pixel_percentage_midel > 0.2:
                  
                     color = (0, 0, 255)
                     label = "Stop"
                     accepted_circles.append([i, color, label])
-                elif blue_pixel_percentage > 0.45 and simetria_azul_X > 0.8 and simetria_azul_Y > 0.8 and white_pixel_percentage > 0.01:
+                elif blue_pixel_percentage > 0.456 and simetria_azul_X > 0.85 and simetria_azul_Y > 0.85 and white_pixel_percentage > 0.05:
                     color = (255, 0, 0)
                     label = "Obligacion"
                     accepted_circles.append([i, color, label])
-                elif white_pixel_percentage > 0.3 and red_pixel_percentage > 0.2 and a > 0.16:
+                elif white_pixel_percentage > 0.3 and red_pixel_percentage > 0.2 and red_pixel_percentage < 0.4 and a > 0.12 and black_pixel_percentage > 0.01:
                     color = (0, 255, 0)
                     label = "Prohibicion"
                     accepted_circles.append([i, color, label])
-                elif red_pixel_simetry > 0.7 and white_pixel_percentage_midel > 0.4 and red_pixel_percentage_up > 0.5 and red_pixel_percentage_down > 0.5:
+                elif red_pixel_simetry > 0.7 and white_pixel_percentage_midel > 0.5 and red_pixel_percentage_up > 0.5 and red_pixel_percentage_down > 0.5:
                     color = (0, 0, 255)
                     label = "Prohibido"
                     accepted_circles.append([i, color, label])
                 else:
                     continue
+
             
         # accepted_circles contiene varios círculos para la misma señal en algunas situaciones, ahora nos quedaremos solo con
         # uno de los círculos, que será el más grande
@@ -452,12 +469,12 @@ def elimOtherColors(img, red, showAll, value):
         mascara_combinada = mascara_azul
     else:
         # Definir el rango de color para el rojo en el espacio de color HSV
-        lower_red1 = np.array([0, 100, 80])  # Rango bajo para el matiz, saturación y valor
+        lower_red1 = np.array([0, 100, 50])  # Rango bajo para el matiz, saturación y valor
         upper_red1 = np.array([10, 255, 255])  # Rango alto para el matiz, saturación y valor
         mascara_roja1 = cv2.inRange(imagen_hsv, lower_red1, upper_red1)
 
         # Definir otro rango para el rojo que se encuentra en la parte superior del espectro
-        lower_red2 = np.array([160, 100, 80])  # Rango bajo para el matiz, saturación y valor
+        lower_red2 = np.array([160, 100, 50])  # Rango bajo para el matiz, saturación y valor
         upper_red2 = np.array([180, 255, 255])  # Rango alto para el matiz, saturación y valor
         mascara_roja2 = cv2.inRange(imagen_hsv, lower_red2, upper_red2)
 
@@ -508,12 +525,12 @@ def elimOtherColorsSimple(img, red, showAll, value):
         mascara_combinada = mascara_azul
     else:
         
-        lower_red1 = np.array([0, 100, 80]) 
+        lower_red1 = np.array([0, 100, 50]) 
         upper_red1 = np.array([10, 255, 255]) 
         mascara_roja1 = cv2.inRange(imagen_hsv, lower_red1, upper_red1)
 
        
-        lower_red2 = np.array([160, 100, 80])  
+        lower_red2 = np.array([160, 100, 50])  
         upper_red2 = np.array([180, 255, 255])  
         mascara_roja2 = cv2.inRange(imagen_hsv, lower_red2, upper_red2)
 

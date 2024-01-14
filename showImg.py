@@ -1,9 +1,14 @@
+import skimage
 import cv2
 import numpy as np
+from skimage import io
 
 def mostrar_imagen(imagen):
     cv2.imshow("Imagen", imagen)
     cv2.waitKey(0)
+
+def saveIMG(name, imagen):
+    io.imsave(name, (imagen * 255).astype('uint8'))
 
 def showImgs(images):
     # Asumir que las imágenes son del mismo tamaño

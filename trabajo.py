@@ -129,11 +129,11 @@ if showAll: si.mostrar_imagen(edgesA)
 
 
 # Dteccion de triangulos
-imagenTriangulosR, maskDeleted2, mask_edge = fs.detectTriangles(imagen, edgesR, imagenCirculosA)
+imagenTriangulosR, maskDeleted2, mask_edge = fs.detectTriangles(imagenDeleted, edgesR, imagenCirculosA)
 if showAll: si.mostrar_imagen(imagenTriangulosR)
 
 
-imagenSquaresA, maskDeleted3, mask_edge2 = fs.detectSquares(imagen, edgesA, imagenTriangulosR)
+imagenSquaresA, maskDeleted3, mask_edge2 = fs.detectSquares(imagenDeleted, edgesA, imagenTriangulosR)
 if showAll: si.mostrar_imagen(imagenSquaresA)
 
 
@@ -144,10 +144,10 @@ maskEdgeR = cv2.bitwise_and(edgesR, mask_edge)
 
 
 # Deteccion de circulos
-imagenCirculosR, maskDeleted0 = fs.detectCircles(imagen, maskEdgeR, imagenSquaresA)
+imagenCirculosR, maskDeleted0 = fs.detectCircles(imagenDeleted, maskEdgeR, imagenSquaresA)
 if showAll: si.mostrar_imagen(imagenCirculosR)
 
-imagenCirculosA, maskDeleted1 = fs.detectCircles(imagen, maskEdgeA, imagenCirculosR)
+imagenCirculosA, maskDeleted1 = fs.detectCircles(imagenDeleted, maskEdgeA, imagenCirculosR)
 if showAll: si.mostrar_imagen(imagenCirculosA)
 
 
@@ -192,11 +192,11 @@ if showAll: si.mostrar_imagen(edgesA)
 
 
 # Dteccion de triangulos
-imagenTriangulosR, maskDeleted2, mask_edge = fs.detectTriangles(imagen, edgesR, imagenCirculosA)
+imagenTriangulosR, maskDeleted2, mask_edge = fs.detectTriangles(imagenDeleted, edgesR, imagenCirculosA)
 if showAll: si.mostrar_imagen(imagenTriangulosR)
 
 
-imagenSquaresA, maskDeleted3, mask_edge2 = fs.detectSquares(imagen, edgesA, imagenTriangulosR)
+imagenSquaresA, maskDeleted3, mask_edge2 = fs.detectSquares(imagenDeleted, edgesA, imagenTriangulosR)
 if showAll: si.mostrar_imagen(imagenSquaresA)
 
 
@@ -206,17 +206,14 @@ maskEdgeR = cv2.bitwise_and(edgesR, mask_edge)
 
 
 
-
 # Deteccion de circulos
-imagenCirculosR, maskDeleted0 = fs.detectCircles(imagen, maskEdgeR, imagenSquaresA)
+imagenCirculosR, maskDeleted0 = fs.detectCircles(imagenDeleted, maskEdgeR, imagenSquaresA)
 if showAll: si.mostrar_imagen(imagenCirculosR)
 
-imagenCirculosA, maskDeleted1 = fs.detectCircles(imagen, maskEdgeA, imagenCirculosR)
+imagenCirculosA, maskDeleted1 = fs.detectCircles(imagenDeleted, maskEdgeA, imagenCirculosR)
 if showAll: si.mostrar_imagen(imagenCirculosA)
 
 
 
 
 si.mostrar_imagen(imagenCirculosA)
-
-
