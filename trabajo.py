@@ -12,7 +12,9 @@ images = [cv2.imread(f"materialSenales/{i}.ppm") for i in range(1, 13)]
 showAll = False
 
 
-imagen = images[4]
+imagen = images[0]
+
+
 
 si.mostrar_imagen(imagen)
 
@@ -62,22 +64,28 @@ edgesA = fs.cannyHSV(imagenEnchanceA)
 if showAll: si.mostrar_imagen(edgesA)
 
 
-# Deteccion de circulos
-imagenCirculosR, maskDeleted0 = fs.detectCircles(imagen, edgesR)
-if showAll: si.mostrar_imagen(imagenCirculosR)
-
-imagenCirculosA, maskDeleted1 = fs.detectCircles(imagen, edgesA)
-if showAll: si.mostrar_imagen(imagenCirculosA)
-
-
 
 # Dteccion de triangulos
-imagenTriangulosR, maskDeleted2 = fs.detectTriangles(imagen, edgesR)
+imagenTriangulosR, maskDeleted2, mask_edge = fs.detectTriangles(imagen, edgesR)
 if showAll: si.mostrar_imagen(imagenTriangulosR)
 
 
-imagenSquaresA, maskDeleted3 = fs.detectSquares(imagen, edgesA)
+imagenSquaresA, maskDeleted3, mask_edge2 = fs.detectSquares(imagen, edgesA)
 if showAll: si.mostrar_imagen(imagenSquaresA)
+
+
+maskEdgeA = cv2.bitwise_and(edgesA, mask_edge2)
+maskEdgeR = cv2.bitwise_and(edgesR, mask_edge)
+
+si.mostrar_imagen(imagen)
+
+
+# Deteccion de circulos
+imagenCirculosR, maskDeleted0 = fs.detectCircles(imagen, maskEdgeA)
+if showAll: si.mostrar_imagen(imagenCirculosR)
+
+imagenCirculosA, maskDeleted1 = fs.detectCircles(imagen, maskEdgeR)
+if showAll: si.mostrar_imagen(imagenCirculosA)
 
 
 
@@ -120,22 +128,29 @@ if showAll: si.mostrar_imagen(edgesA)
 
 
 
-# Deteccion de circulos
-imagenCirculosR, maskDeleted0 = fs.detectCircles(imagenSquaresA, edgesR)
-if showAll: si.mostrar_imagen(imagenCirculosR)
-
-imagenCirculosA, maskDeleted1 = fs.detectCircles(imagenSquaresA, edgesA)
-if showAll: si.mostrar_imagen(imagenCirculosA)
-
-
-
 # Dteccion de triangulos
-imagenTriangulosR, maskDeleted2 = fs.detectTriangles(imagenSquaresA, edgesR)
+imagenTriangulosR, maskDeleted2, mask_edge = fs.detectTriangles(imagenSquaresA, edgesR)
 if showAll: si.mostrar_imagen(imagenTriangulosR)
 
 
-imagenSquaresA, maskDeleted3 = fs.detectSquares(imagenSquaresA, edgesA)
+imagenSquaresA, maskDeleted3, mask_edge2 = fs.detectSquares(imagenSquaresA, edgesA)
 if showAll: si.mostrar_imagen(imagenSquaresA)
+
+
+
+maskEdgeA = cv2.bitwise_and(edgesA, mask_edge2)
+maskEdgeR = cv2.bitwise_and(edgesR, mask_edge)
+
+
+
+# Deteccion de circulos
+imagenCirculosR, maskDeleted0 = fs.detectCircles(imagenSquaresA, maskEdgeR)
+if showAll: si.mostrar_imagen(imagenCirculosR)
+
+imagenCirculosA, maskDeleted1 = fs.detectCircles(imagenSquaresA, maskEdgeA)
+if showAll: si.mostrar_imagen(imagenCirculosA)
+
+
 
 
 maskDeletedFInal = cv2.bitwise_and(maskDeleted0, cv2.bitwise_and(maskDeleted1, cv2.bitwise_and(maskDeleted2, maskDeleted3)))
@@ -174,23 +189,32 @@ edgesA = fs.cannyHSV(imagenEnchanceA)
 if showAll: si.mostrar_imagen(edgesA)
 
 
-# Deteccion de circulos
-imagenCirculosR, maskDeleted0 = fs.detectCircles(imagen, edgesR)
-if showAll: si.mostrar_imagen(imagenCirculosR)
-
-imagenCirculosA, maskDeleted1 = fs.detectCircles(imagen, edgesA)
-if showAll: si.mostrar_imagen(imagenCirculosA)
-
 
 
 # Dteccion de triangulos
-imagenTriangulosR, maskDeleted2 = fs.detectTriangles(imagen, edgesR)
+imagenTriangulosR, maskDeleted2, mask_edge = fs.detectTriangles(imagen, edgesR)
 if showAll: si.mostrar_imagen(imagenTriangulosR)
 
 
-imagenSquaresA, maskDeleted3 = fs.detectSquares(imagen, edgesA)
-si.mostrar_imagen(imagenSquaresA)
+imagenSquaresA, maskDeleted3, mask_edge2 = fs.detectSquares(imagen, edgesA)
+if showAll: si.mostrar_imagen(imagenSquaresA)
 
 
+
+maskEdgeA = cv2.bitwise_and(edgesA, mask_edge2)
+maskEdgeR = cv2.bitwise_and(edgesR, mask_edge)
+
+
+
+
+# Deteccion de circulos
+imagenCirculosR, maskDeleted0 = fs.detectCircles(imagen, maskEdgeR)
+if showAll: si.mostrar_imagen(imagenCirculosR)
+
+imagenCirculosA, maskDeleted1 = fs.detectCircles(imagen, maskEdgeA)
+if showAll: si.mostrar_imagen(imagenCirculosA)
+
+
+si.mostrar_imagen(imagen)
 
 

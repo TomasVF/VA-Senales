@@ -65,7 +65,7 @@ def detectCircles(imagen, edges, va=False):
     imagen_hsv = cv2.cvtColor(imagen, cv2.COLOR_BGR2HSV)
 
     # rangos de pixeles blancos
-    lower_white = np.array([0, 0, 200])
+    lower_white = np.array([0, 0, 150])
     upper_white = np.array([180, 30, 255])
 
     # rangos de pixeles azules
@@ -107,7 +107,7 @@ def detectCircles(imagen, edges, va=False):
             if close_circles_count > 2:
                 filtered_circles.append(i)
             else:
-                # Si no puede que sea una señal de stop así que se hacen nuebas comprobaciones
+                # Si no puede que sea una señal de stop así que se hacen nuevas comprobaciones
                 mask1 = np.zeros_like(imagen, dtype=np.uint8)
                 cv2.circle(mask1, (i[0], i[1]), i[2], (255, 255, 255), thickness=-1)
                 imagenSoloInteriorCirculo = cv2.bitwise_and(imagen_hsv, mask1)
@@ -161,6 +161,27 @@ def detectCircles(imagen, edges, va=False):
 
                 roiA = mascara_azul[i[1]-i[2]:i[1]+i[2], i[0]-i[2]:i[0]+i[2]]
 
+                # Se separa la imagen azul para comprobar la simetría de píxeles azules en los círculos
+                ancho, alto = np.shape(roiA)
+
+                mitad_superior = roiA[:ancho // 2, :]
+                mitad_inferior = roiA[ancho // 2:, :]
+                mitad_izquierda = roiA[:, :alto // 2]
+                mitad_derecha = roiA[:, alto // 2:]
+
+                
+
+                if np.sum(mitad_inferior == 255) == 0:
+                    simetria_azul_X = 0
+                else:
+                    simetria_azul_X = np.sum(mitad_superior == 255) / np.sum(mitad_inferior == 255)
+
+                if np.sum(mitad_derecha == 255) == 0:
+                    simetria_azul_Y = 0
+                else:
+                    simetria_azul_Y = np.sum(mitad_izquierda == 255) / np.sum(mitad_derecha == 255)
+
+
                 roiB = mascara_blanco[i[1]-i[2]:i[1]+i[2], i[0]-i[2]:i[0]+i[2]]
 
                 # Se calcula el porcentaje de píxeles de cada color para el ROI
@@ -179,7 +200,7 @@ def detectCircles(imagen, edges, va=False):
                     color = (0, 0, 255)
                     label = "Stop"
                     accepted_circles.append([i, color, label])
-                elif blue_pixel_percentage > 0.45 and white_pixel_percentage > 0.01:
+                elif blue_pixel_percentage > 0.45 and simetria_azul_X > 0.8 and simetria_azul_Y > 0.8 and white_pixel_percentage > 0.01:
                     color = (255, 0, 0)
                     label = "Obligacion"
                     accepted_circles.append([i, color, label])
@@ -263,6 +284,11 @@ def detectTriangles(imagen, edges):
 
     # Create a mask for the detected squares
     mask_triangles = np.zeros_like(imagen, dtype=np.uint8)
+    mask_triangles2 = np.zeros_like(edges, dtype=np.uint8)
+
+    # Dibujar los triángulos encontrados en la imagen original
+    image_with_triangles = cv2.drawContours(imagen, triangles, -1, (0, 255, 0), 2)
+
 
     for triangle in triangles:
 
@@ -280,6 +306,8 @@ def detectTriangles(imagen, edges):
 
         cv2.drawContours(mask_triangles, triangles, -1, (255, 255, 255), thickness=cv2.FILLED)
 
+        cv2.drawContours(mask_triangles2, triangles, -1, (255, 255, 255), thickness=cv2.FILLED)
+
 
         M = cv2.moments(triangle)
         cx = int(M["m10"] / M["m00"])
@@ -291,14 +319,13 @@ def detectTriangles(imagen, edges):
         # Se diferencia entre ceda y peligro según si el triángulo apunta hacia arriba o hacia abajo
 
         if(d2>d1):
-            cv2.putText(imagen, 'Ceda', (cx - 20, cy + 50), font, 0.5, (0, 255, 0), 2, cv2.LINE_AA)
+            cv2.putText(image_with_triangles, 'Ceda', (cx - 20, cy + 50), font, 0.5, (0, 255, 0), 2, cv2.LINE_AA)
         else:
-            cv2.putText(imagen, 'Peligro', (cx - 20, cy + 50), font, 0.5, (0, 255, 0), 2, cv2.LINE_AA)
+            cv2.putText(image_with_triangles, 'Peligro', (cx - 20, cy + 50), font, 0.5, (0, 255, 0), 2, cv2.LINE_AA)
 
-    # Dibujar los triángulos encontrados en la imagen original
-    image_with_triangles = cv2.drawContours(imagen, triangles, -1, (0, 255, 0), 2)
 
-    return image_with_triangles, cv2.bitwise_not(mask_triangles)
+
+    return image_with_triangles, cv2.bitwise_not(mask_triangles), cv2.bitwise_not(mask_triangles2)
 
 # Función que busca cuadrados en la imagen
 def detectSquares(imagen, edges):
@@ -361,8 +388,12 @@ def detectSquares(imagen, edges):
     mask_squares = np.zeros_like(imagen, dtype=np.uint8)
     cv2.drawContours(mask_squares, squares, -1, (255, 255, 255), thickness=cv2.FILLED)
 
+    mask_squares2 = np.zeros_like(edges, dtype=np.uint8)
+    cv2.drawContours(mask_squares2, squares, -1, (255, 255, 255), thickness=cv2.FILLED)
+
     # Invert the mask to keep the areas outside the squares
     mask_inverse = cv2.bitwise_not(mask_squares)
+    mask_inverse2 = cv2.bitwise_not(mask_squares2)
 
 
     for square in squares:
@@ -376,7 +407,7 @@ def detectSquares(imagen, edges):
         # Put text below the square
         cv2.putText(image_with_squares, 'Indication', (cx - 30, cy), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2, cv2.LINE_AA)
 
-    return image_with_squares, mask_inverse
+    return image_with_squares, mask_inverse, mask_inverse2
 
 
 # Función que aplica canny a una imagen
