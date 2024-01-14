@@ -82,7 +82,7 @@ def detectCircles(imagen, edges, imagenResult, va=False):
 
     # Se aplica HoughCircles
     circles = cv2.HoughCircles(edges, cv2.HOUGH_GRADIENT, dp=1, minDist=1,
-                            param1=1500, param2=13, minRadius=5, maxRadius=50)
+                            param1=1500, param2=13, minRadius=6, maxRadius=50)
     
     # Si se ha detectado algún círculo se hacen varias comprobaciones para asegurarse de que es una señal
     if circles is not None:
@@ -191,8 +191,26 @@ def detectCircles(imagen, edges, imagenResult, va=False):
                 
                 white_pixel_percentage = np.sum(roiB == 255) / float(roiB.size)
 
+                
+                
+                tamanio_roiR = roiR.shape[0] // 3
+                parte1 = roiR[:tamanio_roiR, :]
+                parte3 = roiR[2*tamanio_roiR:, :]
 
-                # si.mostrar_imagen(imagen[i[1]-i[2]:i[1]+i[2], i[0]-i[2]:i[0]+i[2]])
+
+
+                red_pixel_percentage_up = np.sum(parte1 == 255) / float(parte1.size)
+                red_pixel_percentage_down = np.sum(parte3 == 255) / float(parte3.size)
+            
+
+                if np.sum(parte3 == 255) != 0:
+                    red_pixel_simetry = np.sum(parte1 == 255) / np.sum(parte3 == 255)
+                else:
+                    red_pixel_simetry = 0
+
+                tamanio_roiB = roiB.shape[0] // 3
+                parte2B = roiB[tamanio_roiB:2*tamanio_roiB, :]
+                white_pixel_percentage_midel = np.sum(parte2B == 255) / float(parte2B.size)
 
                 # Se comprueban los porcentajes de color y el valor a para identificar las señales y su tipo
                 if red_pixel_percentage > 0.6 and white_pixel_percentage > 0.03 and white_pixel_percentage < 0.1 and np.std(imagenSoloInteriorCirculo) > 5:
@@ -208,6 +226,10 @@ def detectCircles(imagen, edges, imagenResult, va=False):
                     color = (0, 255, 0)
                     label = "Prohibicion"
                     accepted_circles.append([i, color, label])
+                elif red_pixel_simetry > 0.7 and white_pixel_percentage_midel > 0.4 and red_pixel_percentage_up > 0.5 and red_pixel_percentage_down > 0.5:
+                    color = (0, 0, 255)
+                    label = "Prohibido"
+                    accepted_circles.append([i, color, label])
                 else:
                     continue
             
@@ -219,7 +241,7 @@ def detectCircles(imagen, edges, imagenResult, va=False):
                 cont = False
                 for j in accepted_circles:
                     distance = np.sqrt(np.sum((i[0][:2] - j[0][:2])**2))
-                    # si hay un círculo ceracano
+                    # si hay un círculo cercano
                     if distance > 0 and distance < 100:
                         # si tiene un radio mayor al actual el actual se descarta
                         if i[0][2] < j[0][2]:
