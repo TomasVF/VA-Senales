@@ -56,7 +56,7 @@ def laplace(imagen):
 
 
  # Función que busca circulos en una imagen
-def detectCircles(imagen, edges, va=False):
+def detectCircles(imagen, edges, imagenResult, va=False):
 
     # Mascara que se utilizará más adelante
     mask_circles = np.zeros_like(imagen, dtype=np.uint8)
@@ -242,23 +242,23 @@ def detectCircles(imagen, edges, va=False):
                 color = i[1]
                 label = i[2]
 
-                cv2.circle(imagen, (circ[0], circ[1]), circ[2], color, 2)
+                cv2.circle(imagenResult, (circ[0], circ[1]), circ[2], color, 2)
 
                 
-                cv2.circle(imagen, (circ[0], circ[1]), 2, (0, 0, 255), 3)
+                cv2.circle(imagenResult, (circ[0], circ[1]), 2, (0, 0, 255), 3)
 
 
-                cv2.putText(imagen, label, (circ[0]-int(circ[2]/2), circ[1]+int(circ[2]/2)+30),
+                cv2.putText(imagenResult, label, (circ[0]-int(circ[2]/2), circ[1]+int(circ[2]/2)+30),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
                 # Se dibuja en negro en la mascara que se había creado inicialmente, esto se aplicará para que las siguientes iteraciones no encuentren el mismo círculo
                 cv2.circle(mask_circles, (i[0][0], i[0][1]), i[0][2], (255, 255, 255), thickness=cv2.FILLED)
 
 
 
-    return imagen, cv2.bitwise_not(mask_circles)
+    return imagenResult, cv2.bitwise_not(mask_circles)
 
 # Función que busca triángulos en una imagen
-def detectTriangles(imagen, edges):
+def detectTriangles(imagen, edges, imagenResult):
     contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     # Iterar sobre los contornos y filtrar los que parecen ser triángulos
@@ -287,7 +287,7 @@ def detectTriangles(imagen, edges):
     mask_triangles2 = np.zeros_like(edges, dtype=np.uint8)
 
     # Dibujar los triángulos encontrados en la imagen original
-    image_with_triangles = cv2.drawContours(imagen, triangles, -1, (0, 255, 0), 2)
+    image_with_triangles = cv2.drawContours(imagenResult, triangles, -1, (0, 255, 0), 2)
 
 
     for triangle in triangles:
@@ -319,16 +319,16 @@ def detectTriangles(imagen, edges):
         # Se diferencia entre ceda y peligro según si el triángulo apunta hacia arriba o hacia abajo
 
         if(d2>d1):
-            cv2.putText(image_with_triangles, 'Ceda', (cx - 20, cy + 50), font, 0.5, (0, 255, 0), 2, cv2.LINE_AA)
+            cv2.putText(imagenResult, 'Ceda', (cx - 20, cy + 50), font, 0.5, (0, 255, 0), 2, cv2.LINE_AA)
         else:
-            cv2.putText(image_with_triangles, 'Peligro', (cx - 20, cy + 50), font, 0.5, (0, 255, 0), 2, cv2.LINE_AA)
+            cv2.putText(imagenResult, 'Peligro', (cx - 20, cy + 50), font, 0.5, (0, 255, 0), 2, cv2.LINE_AA)
 
 
 
-    return image_with_triangles, cv2.bitwise_not(mask_triangles), cv2.bitwise_not(mask_triangles2)
+    return imagenResult, cv2.bitwise_not(mask_triangles), cv2.bitwise_not(mask_triangles2)
 
 # Función que busca cuadrados en la imagen
-def detectSquares(imagen, edges):
+def detectSquares(imagen, edges, imagenResult):
 
     lower_blue = np.array([100, 100, 50])
     upper_blue = np.array([120, 255, 255])
@@ -382,7 +382,7 @@ def detectSquares(imagen, edges):
                             if counts:
                                 squares.append(approx)
     # Se pintan los cuadrados detectados en la imagen
-    image_with_squares = cv2.drawContours(imagen, squares, -1, (0, 255, 0), 2)
+    image_with_squares = cv2.drawContours(imagenResult, squares, -1, (0, 255, 0), 2)
 
     # La imagen con los cuadrados encontrados borrados
     mask_squares = np.zeros_like(imagen, dtype=np.uint8)
@@ -405,9 +405,9 @@ def detectSquares(imagen, edges):
         cy = y + h + 20  # Adjust the distance below the square
 
         # Put text below the square
-        cv2.putText(image_with_squares, 'Indication', (cx - 30, cy), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2, cv2.LINE_AA)
+        cv2.putText(imagenResult, 'Indication', (cx - 30, cy), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2, cv2.LINE_AA)
 
-    return image_with_squares, mask_inverse, mask_inverse2
+    return imagenResult, mask_inverse, mask_inverse2
 
 
 # Función que aplica canny a una imagen
