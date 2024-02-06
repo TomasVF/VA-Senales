@@ -38,7 +38,7 @@ def showImgs(images):
 
 
 
-# images = [cv2.imread(f"materialSenales/{i}.ppm") for i in range(1, 13)]
+images = [cv2.imread(f"materialSenales/{i}.ppm") for i in range(1, 13)]
 
 
-# showImgs(images)
+showImgs(images)

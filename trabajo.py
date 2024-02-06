@@ -9,10 +9,10 @@ import funciones as fs
 
 images = [cv2.imread(f"materialSenales/{i}.ppm") for i in range(1, 13)]
 
-showAll = False
+showAll = True
 
 
-imagen = images[11]
+imagen = images[0]
 
 
 
